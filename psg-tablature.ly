@@ -197,7 +197,7 @@ psg-define-copedent =
   ; check whether to add an additional string for display style
   
   (if offset
-    (append strings (list #{c'''''#}))
+    (append strings (list #{c''''''''#}))
     strings))
 
 %% Engraver
