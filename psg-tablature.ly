@@ -42,7 +42,7 @@
 make-psg-pedal-event =
 #(define-music-function
   (id span-dir amount)
-  (psg-id-type? number? number?)
+  (psg-id-type? number? rational?)
   (if (> amount 2)
     (begin 
       (ly:warning "Pedal or lever event with amount greater than extended (2) - processing as extended")
@@ -53,11 +53,11 @@ make-psg-pedal-event =
       (set! amount 1)))
   (make-music 'PsgPedalOrLeverEvent 'span-direction span-dir 'id (psg-id-to-string id) 'amount amount))
 
-psgPartial =
+psgFractional =
 #(define-music-function
-  (id amount)
-  (psg-id-type? number?)
-  (make-psg-pedal-event id START amount))
+  (id num denom)
+  (psg-id-type? integer? integer?)
+  (make-psg-pedal-event id START (/ num denom)))
 
 psgExt =
 #(define-music-function
@@ -169,6 +169,11 @@ psg-define-copedent =
     (ly:error "Impossible pedal/lever combination"))
   (+ prev add))
 
+#(define (calculate-alterations normal extended amount)
+  (if (<= amount 1)
+      (map (lambda (a) (* a amount)) normal)
+      (map (lambda (a b) (+ (* (- 2 amount) b) (* (- 1 amount) a))) normal extended)))
+
 #(define (psg-evaluation-loop adjust copedent active)  
   (if (null? active)
     (begin adjust)
@@ -177,7 +182,7 @@ psg-define-copedent =
       (if alterations
         (begin 
           (set! adjust (psg-evaluation-loop adjust copedent (cdr active)))
-          (map sum-alterations adjust (if (<= amount 1) (car alterations) (cadr alterations))))
+          (map sum-alterations adjust (calculate-alterations (car alterations) (cadr alterations) amount)))
         (begin adjust)))))
 
 #(define (psg-evaluate-copedent copedent active offset)
