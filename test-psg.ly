@@ -59,6 +59,12 @@ stringJ = \markup{B}
       \alias TabStaff
       \consists #psg-tab-engraver
 
+      %% Overrides for tab in a space
+      
+      \override TabNoteHead.extra-offset = #'(0 . -0.5)
+      \override TabNoteHead.font-size = #-3
+      \override TabNoteHead.whiteout = ##f
+      
       copedent = \copedentE
 
       \override Clef.stencil = #(lambda (grob)
@@ -86,14 +92,6 @@ stringJ = \markup{B}
     }
     \inherit-acceptability PedalSteelTab TabStaff
     \inherit-acceptability TabStaff PedalSteelTab
-
-    \context
-    {
-      \TabVoice
-      \override TabNoteHead.extra-offset = #'(0 . -0.5)
-      \override TabNoteHead.font-size = #-3
-      \override TabNoteHead.whiteout = ##t
-    }
   }
 
   \new StaffGroup <<
