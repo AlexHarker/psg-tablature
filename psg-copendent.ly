@@ -2,7 +2,7 @@
 
 %% Create the basic tuning when no pedals or levers are engaged
 
- PSGE-tuning = \stringTuning <b d e fis gis b e' gis' dis' fis'>
+ PSGE-tuning = \stringTuning <b, d e fis gis b e' gis' dis' fis'>
   
 %% Create a set of pedals and levers with an ID (symbol, string or number) and a list of string alterations in semitones
   
