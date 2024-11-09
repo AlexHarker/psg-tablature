@@ -144,6 +144,9 @@ psg-define-copedent =
 #(define (psg-copedent-pedals-and-levers copedent)
   (cdr copedent))
 
+#(define (psg-copedent-num-strings copedent)
+  (length (psg-copedent-strings copedent)))
+
 #(define (psg-copedent-id-list copedent)
   (map car (psg-copedent-pedals-and-levers copedent)))
 
@@ -255,3 +258,29 @@ psg-define-copedent =
                   (set! active (psg-remove-id active id))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active offset)))))))))
+
+%% Markup for copedents
+
+#(define (pitch-to-markup pitch)
+  (let ((alteration (ly:pitch-alteration pitch))
+        (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7))))))
+    (if (= alteration 0)
+        (list (markup (#:simple letter)))
+        (list (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.52 (#:fontsize -4 (make-accidental-markup alteration))))))))))
+
+#(define (psg-string-numbers copedent)
+  (define (psg-string-number-list idx num)
+    (let ((str (number->string idx)))
+      (if (>= idx num)
+          (list (markup (#:simple str)))
+          (append (list (markup (#:simple str))) (psg-string-number-list (+ idx 1) num)))))
+  (psg-string-number-list 1 (psg-copedent-num-strings copedent)))
+
+#(define (psg-string-names copedent)
+  (define strings (psg-copedent-strings copedent))
+  (define (psg-string-name-list idx num)
+    (let ((item (pitch-to-markup (list-ref strings idx))))
+      (begin (if (>= idx num)
+          (begin item)
+          (append item (psg-string-name-list (+ idx 1) num))))))
+  (psg-string-name-list 0 (- (psg-copedent-num-strings copedent) 1)))
