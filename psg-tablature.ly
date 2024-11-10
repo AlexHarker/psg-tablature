@@ -111,8 +111,9 @@ psgOff =
 
 %% Context properties
 
-#(set-object-property! 'copedent 'translation-type? psg-copedent?)
+#(set-object-property! 'psgCopedent 'translation-type? psg-copedent?)
 #(set-object-property! 'psgTabInSpace 'translation-type? boolean?)
+#(set-object-property! 'psgClefStyle 'translation-type? symbol?)
 
 %% Copedent definition functions
 
@@ -209,27 +210,43 @@ psg-define-copedent =
 
 %% Clef stencil
 
-#(define (psg-tab-clef-stencil copedent in-space)
-   (define (height-calculate in-space)
-     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) in-space))
+#(define (psg-tab-clef-stencil copedent in-space style)
+  (define (height-calculate in-space)
+    (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) in-space))
   (let
-    ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
-     (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
-    (lambda (grob)
-          (grob-interpret-markup grob
-            #{
-              \markup
-              \override #'(baseline-skip . 1.5)
-              \concat
-              {
-                \hspace #-0.3
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
-                \hspace #0.4
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
-                \hspace #0.5
-                \lower #(/ line-height 2) \draw-line #(cons 0 line-height)
-              }
-            #}))))
+   ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
+    (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
+   (lambda (grob)
+    (grob-interpret-markup grob
+      #{
+       \markup
+       \override #'(baseline-skip . 1.5)
+       \concat
+       {
+        \hspace #-0.3
+        #(case style
+          ((0)
+          #{
+            \markup 
+            \concat
+            { 
+             \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
+             \hspace #0.4
+             \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
+            }
+          #})
+          ((1)
+          #{
+            \markup \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
+          #})
+          ((2)
+          #{
+            \markup \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
+          #}))
+        \hspace #0.5
+        \lower #(/ line-height 2) \draw-line #(cons 0 line-height)
+       }
+      #}))))
 
 %% Engraver
 
@@ -261,8 +278,9 @@ psg-define-copedent =
 
 #(define (psg-tab-engraver context)
   (let
-   ((copedent (ly:context-property context 'copedent))
+   ((copedent (ly:context-property context 'psgCopedent))
     (in-space (ly:context-property context 'psgTabInSpace))
+    (clef-style (if (equal? (ly:context-property context 'psgClefStyle) 'both) 0 (if (equal? (ly:context-property context 'psgClefStyle) 'numbers) 1 2)))
     (active '())
     (clefs '())
     (note-heads '()))
@@ -296,7 +314,7 @@ psg-define-copedent =
       ((process-acknowledged engraver)
        (for-each
         (lambda (clef)
-          (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space)))
+          (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space clef-style)))
         clefs)
        (set! clefs '())
        (if in-space
@@ -412,6 +430,7 @@ psg-define-copedent =
       \consists #psg-tab-engraver
       
       psgTabInSpace = ##t
+      psgClefStyle = #'both
     }
     
     \inherit-acceptability PedalSteelTab TabStaff

@@ -49,8 +49,9 @@ myNotes = \transpose c c'
     \context
     {
       \PedalSteelTab 
-      copedent = \copedentE
+      psgCopedent = \copedentE
       psgTabInSpace = ##t
+      psgClefStyle = #'both		% Can also use 'numbers or 'names
     }
   }
   
