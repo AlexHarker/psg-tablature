@@ -372,7 +372,6 @@ psg-define-copedent =
         {
           \overlay
           {
-            \translate #`(,(/ width 2) . ,(/ height 2)) \center-align \vcenter \sans \fontsize #-4 { #text }
             \override #'(line-cap-style . butt)
             \override #'(line-join-style . miter)
             \override #'(filled . #f) \path #thickness
@@ -381,6 +380,7 @@ psg-define-copedent =
                 (lineto ,width ,height)
                 (lineto 0 ,height)
                 (closepath))
+            \translate #`(,(/ width 2) . ,(/ height 2)) \center-align \vcenter \sans \fontsize #-4 { #text }
           }
         }
       #})))
