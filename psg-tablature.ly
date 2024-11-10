@@ -407,7 +407,6 @@ psg-define-copedent =
     }
     
     \inherit-acceptability PedalSteelTab TabStaff
-    \inherit-acceptability TabStaff PedalSteelTab
     
     \context
     {
