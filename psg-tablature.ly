@@ -312,3 +312,31 @@ psg-define-copedent =
           (begin item)
           (append item (psg-string-name-list (+ idx 1) num))))))
   (psg-string-name-list 0 (- (psg-copedent-num-strings copedent) 1)))
+
+%% Definte the PedalSteelTab context
+
+\include "psg-copedent.ly" %% THIS shouldn't need to be here....
+
+\layout
+{
+    \context
+    {
+      \TabStaff
+      \name PedalSteelTab
+      \alias TabStaff
+      \consists #psg-tab-engraver
+      
+      psgTabInSpace = ##t
+      
+      %% TTODO - these tweaks need to move
+      
+      \override TabNoteHead.extra-offset = #'(0 . -0.5)
+      \override TabNoteHead.font-size = #-3
+     % \override TabNoteHead.whiteout = ##f
+     
+      #(psg-tab-clef  #{\copedentE#} #t)
+    }
+    
+    \inherit-acceptability PedalSteelTab TabStaff
+    \inherit-acceptability TabStaff PedalSteelTab
+}

@@ -1,7 +1,7 @@
 \version "2.24.1"
 
 \include "psg-tablature.ly"
-\include "psg-copendent.ly"
+%\include "psg-copedent.ly"
 
 \header
 {
@@ -40,29 +40,15 @@ myNotes = \transpose c c'
       \Staff
       \omit StringNumber
     }
-
+    
     \context
     {
-      \TabStaff
-      \name PedalSteelTab
-      \alias TabStaff
-      \consists #psg-tab-engraver
-      
-      %% Overrides for tab in a space
-      
-      \override TabNoteHead.extra-offset = #'(0 . -0.5)
-      \override TabNoteHead.font-size = #-3
-     % \override TabNoteHead.whiteout = ##f
-      
+      \PedalSteelTab 
       copedent = \copedentE
       psgTabInSpace = ##t
-      
-      #(psg-tab-clef  #{\copedentE#} #t)
     }
-    \inherit-acceptability PedalSteelTab TabStaff
-    \inherit-acceptability TabStaff PedalSteelTab
   }
-
+  
   \new StaffGroup <<
     \new Staff
     {
