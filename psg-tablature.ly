@@ -316,25 +316,25 @@ psg-define-copedent =
 
 #(define-markup-command (psg-copedent-diagram-box layout props size text)
   (number? markup?)
-   (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
-  (interpret-markup layout props
-  #{ 
-    \markup
-    {
-      \overlay
-      {
-        \center-column \sans \fontsize #-2 { #text }
-        \override #'(line-cap-style . butt)
-        \override #'(line-join-style . miter)
-        \override #'(filled . #f) \path #thickness
-          #`((moveto 0 0)
-            (lineto ,width 0)
-            (lineto ,width ,height)
-            (lineto 0 ,height)
-            (closepath))
-      }
-    }
-  #})))
+  (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
+    (interpret-markup layout props
+      #{
+        \markup
+        {
+          \overlay
+          {
+            \translate #`(,(/ width 2) . ,(/ height 2)) \center-align \vcenter \sans \fontsize #-2 { #text }
+            \override #'(line-cap-style . butt)
+            \override #'(line-join-style . miter)
+            \override #'(filled . #f) \path #thickness
+              #`((moveto 0 0)
+                (lineto ,width 0)
+                (lineto ,width ,height)
+                (lineto 0 ,height)
+                (closepath))
+          }
+        }
+      #})))
 
 #(define (psg-string-loop copedent size heading labelproc)
   (make-column-markup 
@@ -353,7 +353,7 @@ psg-define-copedent =
       (let
         ((header (if (> x 0) (list-ref id-list (- x 1)) ""))
          (listproc (if (> x 0) (lambda (x) "")  (lambda (x) (psg-pitch-to-markup (list-ref strings x) #f)))))
-      (psg-string-loop copedent size header listproc)))))
+        (psg-string-loop copedent size header listproc)))))
 
 #(define-markup-command (psg-copedent-diagram layout props copedent size)
   (psg-copedent? number?)
