@@ -278,53 +278,53 @@ psg-define-copedent =
 
 #(define (psg-tab-engraver context)
   (let
-   ((copedent (ly:context-property context 'psgCopedent))
-    (in-space (ly:context-property context 'psgTabInSpace))
-    (clef-style (if (equal? (ly:context-property context 'psgClefStyle) 'both) 0 (if (equal? (ly:context-property context 'psgClefStyle) 'numbers) 1 2)))
-    (active '())
-    (clefs '())
-    (note-heads '()))
+    ((copedent (ly:context-property context 'psgCopedent))
+     (in-space (ly:context-property context 'psgTabInSpace))
+     (clef-style (if (equal? (ly:context-property context 'psgClefStyle) 'both) 0 (if (equal? (ly:context-property context 'psgClefStyle) 'numbers) 1 2)))
+     (active '())
+     (clefs '())
+     (note-heads '()))
     (make-engraver
       ((initialize engraver)
-       (if (not (psg-copedent? copedent))
-           (ly:error "Copedent is not defined for PSGTabStaff"))
-       (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))
+        (if (not (psg-copedent? copedent))
+          (ly:error "Copedent is not defined for PSGTabStaff"))
+        (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))
       (listeners
-       ((psg-pedal-or-lever-event engraver event)
-        (define dir (ly:event-property event 'span-direction))
-        (define id (ly:event-property event 'id))
-        (define amount (ly:event-property event 'amount))
-        (if (psg-valid-pedal-or-lever copedent id amount)
+        ((psg-pedal-or-lever-event engraver event)
+          (define dir (ly:event-property event 'span-direction))
+          (define id (ly:event-property event 'id))
+          (define amount (ly:event-property event 'amount))
+          (if (psg-valid-pedal-or-lever copedent id amount)
             (begin
               (if (eq? dir START)
-                  (if (not (psg-id-find active id))
-                      (set! active (psg-add-id active id amount))
-                      (if (member (list id amount) active)
-                          (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
-                          (set! active (psg-add-id (psg-remove-id active id) id amount))))
-                  (if (psg-id-find active id)
-                      (set! active (psg-remove-id active id))
-                      (ly:warning "Pedal or lever ~a released without engaging it" id)))
+                (if (not (psg-id-find active id))
+                  (set! active (psg-add-id active id amount))
+                  (if (member (list id amount) active)
+                    (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
+                    (set! active (psg-add-id (psg-remove-id active id) id amount))))
+                (if (psg-id-find active id)
+                  (set! active (psg-remove-id active id))
+                  (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
       (acknowledgers
-       ((clef-interface engraver grob source-engraver)
-        (set! clefs (cons grob clefs)))
-       ((note-head-interface engraver grob source-engraver)
-        (set! note-heads (cons grob note-heads))))
+        ((clef-interface engraver grob source-engraver)
+          (set! clefs (cons grob clefs)))
+        ((note-head-interface engraver grob source-engraver)
+          (set! note-heads (cons grob note-heads))))
       ((process-acknowledged engraver)
-       (for-each
-        (lambda (clef)
-          (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space clef-style)))
-        clefs)
-       (set! clefs '())
-       (if in-space
-           (for-each
+        (for-each
+          (lambda (clef)
+            (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space clef-style)))
+          clefs)
+        (set! clefs '())
+        (if in-space
+          (for-each
             (lambda (note-head)
               (ly:grob-set-property! note-head 'extra-offset '(0 . -0.5))
               (ly:grob-set-property! note-head 'font-size -3)
               (ly:grob-set-property! note-head 'whiteout #f))
             note-heads))
-       (set! note-heads '())))))
+        (set! note-heads '())))))
   
 %% Markup for copedents
 
@@ -348,7 +348,9 @@ psg-define-copedent =
   (define strings (psg-copedent-strings copedent))
   (psg-markuplist-loop 0 (- (psg-copedent-num-strings copedent) 1) (lambda (x) (markup (#:whiteout (psg-pitch-to-markup (list-ref strings x) #t))))))
 
-#(define (psg-alteration-markup copedent id stringnum)
+#(define (psg-alteration-markup copedent id stringnum names)
+  (define (get-pitch amount)
+    (psg-pitch-to-markup (list-ref (psg-evaluate-copedent copedent (list (list id amount)) #f) stringnum) #f))
   (define alterations (psg-alterations-for-id copedent id))
   (define alt (car alterations))
   (define ext (cadr alterations))
@@ -356,10 +358,14 @@ psg-define-copedent =
   (define (numtostring x)
     (if (> x 0) (string-join (list "+" (number->string x)) "") (number->string x)))
   (if (or (null? ext) (= basic (list-ref ext stringnum)))
-      (if (= basic 0)
-          (markup #:simple "")
-          (markup #:simple (numtostring basic)))
-      (make-concat-markup (list (markup #:simple (numtostring basic)) (markup #:simple "/") (markup #:simple (numtostring (list-ref ext stringnum)))))))
+     (if (= basic 0)
+        (markup #:simple "")
+        (if names 
+          (get-pitch 1) 
+          (markup #:simple (numtostring basic))))
+     (if names 
+        (make-concat-markup (list (get-pitch 1) (markup #:simple "/") (get-pitch 2)))
+        (make-concat-markup (list (markup #:simple (numtostring basic)) (markup #:simple "/") (markup #:simple (numtostring (list-ref ext stringnum))))))))
 
 %% Copedent diagram markup
 
@@ -395,14 +401,14 @@ psg-define-copedent =
             \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) (markup #:bold id)) #(colorproc x)
           #})))))))
 
-#(define (psg-pedal-lever-loop copedent size headingcolor color1 color2)
+#(define (psg-pedal-lever-loop copedent size headingcolor color1 color2 names)
   (define id-list (psg-copedent-id-list copedent))
   (define strings (psg-copedent-strings copedent))
   (psg-markuplist-loop 0 (psg-copedent-num-pedals-and-levers copedent)
     (lambda (x)
       (define id (if (> x 0) (list-ref id-list (- x 1)) ""))
       (let
-        ((listproc (if (> x 0) (lambda (y) (psg-alteration-markup copedent id y)) (lambda (y) (markup #:bold (psg-pitch-to-markup (list-ref strings y) #f)))))
+        ((listproc (if (> x 0) (lambda (y) (psg-alteration-markup copedent id y names)) (lambda (y) (markup #:bold (psg-pitch-to-markup (list-ref strings y) #f)))))
          (colorproc (if (> x 0) (lambda (y) (if (> y 0) (if (= (modulo y 2) 1) color2 color1) headingcolor)) (lambda (y) (begin headingcolor)))))
         (psg-string-loop copedent size id listproc colorproc)))))
 
@@ -416,7 +422,7 @@ psg-define-copedent =
       #{
         \markup
         {
-          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95))
+          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95) #f)
         }
       #})))
   
