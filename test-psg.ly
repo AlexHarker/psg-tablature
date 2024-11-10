@@ -27,7 +27,7 @@ myNotes = \transpose c c'
   \column
   {
     \vspace #3
-    \fill-line {\psg-copedent-diagram \copedentE #5 } 
+    \fill-line {\psg-copedent-diagram \copedentE #5 }   % this draws the diagram - the argument is a size argument
     \vspace #3
   }
 }
@@ -49,9 +49,9 @@ myNotes = \transpose c c'
     \context
     {
       \PedalSteelTab 
-      psgCopedent = \copedentE
-      psgTabInSpace = ##t
-      psgClefStyle = #'both		% Can also use 'numbers or 'names
+      psgCopedent = \copedentE	% set the copedent here
+      psgTabInSpace = ##t		% draw the bar positions between lines (true) or on the lines (false)
+      psgClefStyle = #'both		% can also use 'numbers or 'names
     }
   }
   
