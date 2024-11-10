@@ -207,6 +207,30 @@ psg-define-copedent =
     (append strings (list #{c''''''''#}))
     strings))
 
+%% Clef stencil
+
+#(define (psg-tab-clef-stencil copedent in-space)
+   (define (height-calculate offset)
+     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) offset))
+  (let
+    ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
+     (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
+    (lambda (grob)
+          (grob-interpret-markup grob
+            #{
+              \markup
+              \override #'(baseline-skip . 1.5)
+              \concat
+              {
+                \hspace #-0.3
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
+                \hspace #0.4
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
+                \hspace #0.5
+                \lower #(/ line-height 2) \draw-line #(cons 0 line-height)
+              }
+            #}))))
+
 %% Engraver
 
 #(define (psg-valid-pedal-or-lever copedent id amount)
@@ -238,57 +262,51 @@ psg-define-copedent =
 #(define (psg-tab-engraver context)
   (let
    ((copedent (ly:context-property context 'copedent))
-    (offset (ly:context-property context 'psgTabInSpace))
-    (active '()))
+    (in-space (ly:context-property context 'psgTabInSpace))
+    (active '())
+    (clefs '())
+    (note-heads '()))
     (make-engraver
       ((initialize engraver)
-        (if (not (psg-copedent? copedent))
-          (ly:error "Copedent is not defined for PSGTabStaff"))
-        (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active offset)))
+       (if (not (psg-copedent? copedent))
+           (ly:error "Copedent is not defined for PSGTabStaff"))
+       (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))
       (listeners
-        ((psg-pedal-or-lever-event engraver event)
-          (define dir (ly:event-property event 'span-direction))
-          (define id (ly:event-property event 'id))
-          (define amount (ly:event-property event 'amount))
-          (if (psg-valid-pedal-or-lever copedent id amount)
+       ((psg-pedal-or-lever-event engraver event)
+        (define dir (ly:event-property event 'span-direction))
+        (define id (ly:event-property event 'id))
+        (define amount (ly:event-property event 'amount))
+        (if (psg-valid-pedal-or-lever copedent id amount)
             (begin
               (if (eq? dir START)
-                (if (not (psg-id-find active id))
-                  (set! active (psg-add-id active id amount))
-                  (if (member (list id amount) active)
-                    (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
-                    (set! active (psg-add-id (psg-remove-id active id) id amount))))
-                (if (psg-id-find active id)
-                  (set! active (psg-remove-id active id))
-                  (ly:warning "Pedal or lever ~a released without engaging it" id)))
-              (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active offset)))))))))
-
-%% Clef stencil
-
-#(define (psg-tab-clef copedent inspace)
-   (define (height-calculate offset)
-     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) offset))
-  (let
-    ((height (if inspace (height-calculate -0.55) (height-calculate -0.59)))
-     (line-height (if inspace (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
-    (begin
-      #{
-        \override Clef.stencil = #(lambda (grob)
-          (grob-interpret-markup grob
-            #{
-              \markup
-              \override #'(baseline-skip . 1.5)
-              \concat
-              {
-                \hspace #-0.3
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
-                \hspace #0.4
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
-                \hspace #0.5
-                \lower #(/ line-height 2) \draw-line #(cons 0 line-height)
-              }
-            #}))
-      #})))
+                  (if (not (psg-id-find active id))
+                      (set! active (psg-add-id active id amount))
+                      (if (member (list id amount) active)
+                          (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
+                          (set! active (psg-add-id (psg-remove-id active id) id amount))))
+                  (if (psg-id-find active id)
+                      (set! active (psg-remove-id active id))
+                      (ly:warning "Pedal or lever ~a released without engaging it" id)))
+              (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
+      (acknowledgers
+       ((clef-interface engraver grob source-engraver)
+        (set! clefs (cons grob clefs)))
+       ((note-head-interface engraver grob source-engraver)
+        (set! note-heads (cons grob note-heads))))
+      ((process-acknowledged engraver)
+       (for-each
+        (lambda (clef)
+          (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space)))
+        clefs)
+       (set! clefs '())
+       (if in-space
+           (for-each
+            (lambda (note-head)
+              (ly:grob-set-property! note-head 'extra-offset '(0 . -0.5))
+              (ly:grob-set-property! note-head 'font-size -3)
+              (ly:grob-set-property! note-head 'whiteout #f))
+            note-heads))
+       (set! note-heads '())))))
   
 %% Markup for copedents
 
@@ -382,9 +400,7 @@ psg-define-copedent =
         }
       #})))
   
-%% Definte the PedalSteelTab context
-
-\include "psg-copedent.ly" %% THIS shouldn't need to be here....
+%% Define the PedalSteelTab context
 
 \layout
 {
@@ -396,14 +412,6 @@ psg-define-copedent =
       \consists #psg-tab-engraver
       
       psgTabInSpace = ##t
-      
-      %% TTODO - these tweaks need to move
-      
-      \override TabNoteHead.extra-offset = #'(0 . -0.5)
-      \override TabNoteHead.font-size = #-3
-     % \override TabNoteHead.whiteout = ##f
-     
-      #(psg-tab-clef #{\copedentE#} #t)
     }
     
     \inherit-acceptability PedalSteelTab TabStaff
