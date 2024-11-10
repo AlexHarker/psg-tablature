@@ -289,12 +289,10 @@ psg-define-copedent =
   
 %% Markup for copedents
 
-#(define (psg-markuplist-loop from to proc)
-  (define (loop-body idx from)
-      (if (>= idx to)
-          (list (proc idx))
-          (append (list (proc idx)) (loop-body (+ idx 1) to))))
-  (loop-body from to))
+#(define (psg-markuplist-loop idx to proc)
+  (if (>= idx to)
+    (list (proc idx))
+    (append (list (proc idx)) (psg-markuplist-loop (+ idx 1) to proc))))
 
 #(define (pitch-to-markup pitch)
   (let ((alteration (ly:pitch-alteration pitch))
