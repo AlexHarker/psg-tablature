@@ -148,6 +148,9 @@ psg-define-copedent =
 #(define (psg-copedent-num-strings copedent)
   (length (psg-copedent-strings copedent)))
 
+#(define (psg-copedent-num-pedals-and-levers copedent)
+  (length (psg-copedent-pedals-and-levers copedent)))
+
 #(define (psg-copedent-id-list copedent)
   (map car (psg-copedent-pedals-and-levers copedent)))
 
@@ -278,9 +281,9 @@ psg-define-copedent =
               \concat
               {
                 \hspace #-0.3
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers copedent)
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
                 \hspace #0.4
-                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names copedent)
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
                 \hspace #0.5
                 \lower #(/ line-height 2)  \draw-line #(cons 0 line-height)
               }
@@ -294,25 +297,77 @@ psg-define-copedent =
     (list (proc idx))
     (append (list (proc idx)) (psg-markuplist-loop (+ idx 1) to proc))))
 
-#(define (pitch-to-markup pitch)
+#(define (psg-pitch-to-markup pitch whiteout)
   (let ((alteration (ly:pitch-alteration pitch))
-        (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7))))))
+        (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7)))))
+       (item (if whiteout #:whiteout #:simple)))
     (if (= alteration 0)
-        (markup (#:whiteout letter))
-        (markup (#:whiteout (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
+        (markup (begin item letter))
+        (markup (begin item (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
 
-#(define (psg-string-numbers copedent)
+#(define (psg-string-numbers-makuplist copedent)
   (psg-markuplist-loop 1 (psg-copedent-num-strings copedent) (lambda (x)  (markup (#:whiteout (number->string x))))))
 
-#(define (psg-string-names copedent)
+#(define (psg-string-names-markuplist copedent)
   (define strings (psg-copedent-strings copedent))
-  (psg-markuplist-loop 0  (- (psg-copedent-num-strings copedent) 1) (lambda (x)  (pitch-to-markup (list-ref strings x)))))
+  (psg-markuplist-loop 0  (- (psg-copedent-num-strings copedent) 1) (lambda (x)  (psg-pitch-to-markup (list-ref strings x) #t))))
 
-      (begin (if (>= idx num)
-          (begin item)
-          (append item (psg-string-name-list (+ idx 1) num))))))
-  (psg-string-name-list 0 (- (psg-copedent-num-strings copedent) 1)))
+%% Copedent diagram markup
 
+#(define-markup-command (psg-copedent-diagram-box layout props size text)
+  (number? markup?)
+   (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
+  (interpret-markup layout props
+  #{ 
+    \markup
+    {
+      \overlay
+      {
+        \center-column \sans \fontsize #-2 { #text }
+        \override #'(line-cap-style . butt)
+        \override #'(line-join-style . miter)
+        \override #'(filled . #f) \path #thickness
+          #`((moveto 0 0)
+            (lineto ,width 0)
+            (lineto ,width ,height)
+            (lineto 0 ,height)
+            (closepath))
+      }
+    }
+  #})))
+
+#(define (psg-string-loop copedent size heading labelproc)
+  (make-column-markup 
+    (psg-markuplist-loop 0 (psg-copedent-num-strings copedent) 
+      (lambda (x) 
+        (begin 
+          #{ 
+            \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) heading)
+          #})))))
+
+#(define (psg-pedal-lever-loop copedent size)
+  (define id-list (psg-copedent-id-list copedent))
+  (define strings (psg-copedent-strings copedent))
+  (psg-markuplist-loop 0 (psg-copedent-num-pedals-and-levers copedent) 
+    (lambda (x) 
+      (let
+        ((header (if (> x 0) (list-ref id-list (- x 1)) ""))
+         (listproc (if (> x 0) (lambda (x) "")  (lambda (x) (psg-pitch-to-markup (list-ref strings x) #f)))))
+      (psg-string-loop copedent size header listproc)))))
+
+#(define-markup-command (psg-copedent-diagram layout props copedent size)
+  (psg-copedent? number?)
+  (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
+    (interpret-markup layout props
+      #{
+        \markup
+        {
+          \override #'(box-padding . 1)
+          \override #'(thickness . 0)
+          \box \line #(psg-pedal-lever-loop copedent size)
+        }
+      #})))
+  
 %% Definte the PedalSteelTab context
 
 \include "psg-copedent.ly" %% THIS shouldn't need to be here....

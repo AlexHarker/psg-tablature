@@ -22,6 +22,9 @@ myNotes = \transpose c c'
   system-system-spacing = #'((basic-distance . 20) (padding . 3))
 }
 
+\markup {  \psg-copedent-diagram  {\copedentE} #4 }
+
+
 \score
 {
   \layout
