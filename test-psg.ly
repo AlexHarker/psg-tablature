@@ -47,7 +47,7 @@ myNotes = \transpose c c'
       \name PedalSteelTab
       \alias TabStaff
       \consists #psg-tab-engraver
-
+      
       %% Overrides for tab in a space
       
       \override TabNoteHead.extra-offset = #'(0 . -0.5)
@@ -55,29 +55,7 @@ myNotes = \transpose c c'
       \override TabNoteHead.whiteout = ##f
       
       copedent = \copedentE
-
-      \override Clef.stencil = #(lambda (grob)
-        (grob-interpret-markup grob
-          #{
-            \markup
-            \override #'(baseline-skip . 1.5)
-            %% \whiteout
-            \concat
-            {
-              \hspace #-.8
-              \with-dimensions #'(0 . 0) #'(0 . 0)
-              \lower #7.5 \draw-line #'(0 . 15)
-              \hspace #0.5
-              \raise #6.2 \center-column \sans \fontsize #-3  { #(psg-string-numbers #{\copedentE#}) }
-              \hspace #0.25
-              \with-dimensions #'(0 . 0) #'(0 . 0) 
-              \hspace #0.25
-              \raise #6.2 \center-column \sans \fontsize #-3 { #(psg-string-names #{\copedentE#})  }
-              \hspace #0.5
-              \with-dimensions #'(0 . 0) #'(0 . 0)
-              \lower #7.5 \draw-line #'(0 . 15)
-            }
-          #}))
+      #(psg-tab-clef  #{\copedentE#} #t)
     }
     \inherit-acceptability PedalSteelTab TabStaff
     \inherit-acceptability TabStaff PedalSteelTab

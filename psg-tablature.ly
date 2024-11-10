@@ -259,6 +259,30 @@ psg-define-copedent =
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active offset)))))))))
 
+%% Clef stencil
+
+#(define (psg-tab-clef copedent inspace)
+  (let 
+    ((height (if inspace 6.2 7)))
+    (begin 
+      #{
+        \override Clef.stencil = #(lambda (grob) 
+          (grob-interpret-markup grob
+            #{
+              \markup
+              \override #'(baseline-skip . 1.5)
+              \concat
+              {
+                \hspace #-0.6
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers copedent)
+                \hspace #0.2
+                \raise #height \center-column \sans \fontsize #-3 #(psg-string-names copedent)
+                \hspace #0.2
+                \lower #7.5 \draw-line #'(0 . 15)
+              }
+            #}))
+      #})))
+  
 %% Markup for copedents
 
 #(define (pitch-to-markup pitch)
