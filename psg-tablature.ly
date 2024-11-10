@@ -350,13 +350,13 @@ psg-define-copedent =
       #})))
 
 #(define (psg-string-loop copedent size id labelproc)
-  (make-column-markup
+  (markup (#:override `(baseline-skip . ,(/ size 2.2)) ( make-column-markup
     (psg-markuplist-loop 0 (psg-copedent-num-strings copedent)
       (lambda (x)
         (begin
           #{
             \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) (markup #:bold id))
-          #})))))
+          #})))))))
 
 #(define (psg-pedal-lever-loop copedent size)
   (define id-list (psg-copedent-id-list copedent))
@@ -375,7 +375,7 @@ psg-define-copedent =
       #{
         \markup
         {
-          \line #(psg-pedal-lever-loop copedent size)
+          \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size)
         }
       #})))
   
