@@ -44,7 +44,7 @@ make-psg-pedal-event =
   (id span-dir amount)
   (psg-id-type? number? rational?)
   (if (> amount 2)
-    (begin 
+    (begin
       (ly:warning "Pedal or lever event with amount greater than extended (2) - processing as extended")
       (set! amount 2)))
   (if (<= amount 0)
@@ -166,7 +166,7 @@ psg-define-copedent =
 
 #(define (transpose-string pitch alter)
   (begin
-    (ly:make-pitch 
+    (ly:make-pitch
       (ly:pitch-octave pitch)
       (ly:pitch-notename pitch)
       (+ (ly:pitch-alteration pitch) (/ alter 2)))))
@@ -181,13 +181,13 @@ psg-define-copedent =
       (map (lambda (a) (* a amount)) normal)
       (map (lambda (a b) (+ (* (- 2 amount) b) (* (- 1 amount) a))) normal extended)))
 
-#(define (psg-evaluation-loop adjust copedent active)  
+#(define (psg-evaluation-loop adjust copedent active)
   (if (null? active)
     (begin adjust)
     (let ((alterations (psg-alterations-for-id copedent (caar active)))
       (amount (cadar active)))
       (if alterations
-        (begin 
+        (begin
           (set! adjust (psg-evaluation-loop adjust copedent (cdr active)))
           (map sum-alterations adjust (calculate-alterations (car alterations) (cadr alterations) amount)))
         (begin adjust)))))
@@ -210,15 +210,15 @@ psg-define-copedent =
 %% Engraver
 
 #(define (psg-valid-pedal-or-lever copedent id amount)
-  (define alterations (psg-alterations-for-id copedent id)) 
-
+  (define alterations (psg-alterations-for-id copedent id))
+  
   (if alterations
     (if (and (> amount 1) (null? (cadr alterations)))
       (begin 
         (ly:warning "Pedal or lever ~a does not have extension - ignoring!" id)
         #f)
       #t)
-    (begin 
+    (begin
       (ly:warning "No pedal or lever with id ~a in copedent - ignoring!" id)
       #f)))
 
@@ -236,7 +236,7 @@ psg-define-copedent =
   (append active (list (list id amount))))
 
 #(define (psg-tab-engraver context)
-  (let 
+  (let
    ((copedent (ly:context-property context 'copedent))
     (offset (ly:context-property context 'psgTabInSpace))
     (active '()))
@@ -251,7 +251,7 @@ psg-define-copedent =
           (define id (ly:event-property event 'id))
           (define amount (ly:event-property event 'amount))
           (if (psg-valid-pedal-or-lever copedent id amount)
-            (begin 
+            (begin
               (if (eq? dir START)
                 (if (not (psg-id-find active id))
                   (set! active (psg-add-id active id amount))
@@ -267,13 +267,13 @@ psg-define-copedent =
 
 #(define (psg-tab-clef copedent inspace)
    (define (height-calculate offset)
-     (+ (* (- (psg-copedent-num-strings copedent) 1)  0.75) offset))
-  (let 
-    ((height (if inspace (height-calculate -0.55)  (height-calculate -0.59)))
-     (line-height (if inspace (* (psg-copedent-num-strings copedent) 1.5)  (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
-    (begin 
+     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) offset))
+  (let
+    ((height (if inspace (height-calculate -0.55) (height-calculate -0.59)))
+     (line-height (if inspace (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
+    (begin
       #{
-        \override Clef.stencil = #(lambda (grob) 
+        \override Clef.stencil = #(lambda (grob)
           (grob-interpret-markup grob
             #{
               \markup
@@ -285,7 +285,7 @@ psg-define-copedent =
                 \hspace #0.4
                 \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
                 \hspace #0.5
-                \lower #(/ line-height 2)  \draw-line #(cons 0 line-height)
+                \lower #(/ line-height 2) \draw-line #(cons 0 line-height)
               }
             #}))
       #})))
@@ -306,11 +306,11 @@ psg-define-copedent =
         (markup (begin item (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
 
 #(define (psg-string-numbers-makuplist copedent)
-  (psg-markuplist-loop 1 (psg-copedent-num-strings copedent) (lambda (x)  (markup (#:whiteout (number->string x))))))
+  (psg-markuplist-loop 1 (psg-copedent-num-strings copedent) (lambda (x) (markup (#:whiteout (number->string x))))))
 
 #(define (psg-string-names-markuplist copedent)
   (define strings (psg-copedent-strings copedent))
-  (psg-markuplist-loop 0  (- (psg-copedent-num-strings copedent) 1) (lambda (x)  (psg-pitch-to-markup (list-ref strings x) #t))))
+  (psg-markuplist-loop 0 (- (psg-copedent-num-strings copedent) 1) (lambda (x) (psg-pitch-to-markup (list-ref strings x) #t))))
 
 %% Copedent diagram markup
 
@@ -389,7 +389,7 @@ psg-define-copedent =
       \override TabNoteHead.font-size = #-3
      % \override TabNoteHead.whiteout = ##f
      
-      #(psg-tab-clef  #{\copedentE#} #t)
+      #(psg-tab-clef #{\copedentE#} #t)
     }
     
     \inherit-acceptability PedalSteelTab TabStaff
