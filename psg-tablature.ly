@@ -370,12 +370,15 @@ psg-define-copedent =
 
 #(define-markup-command (psg-copedent-diagram layout props copedent size)
   (psg-copedent? number?)
-  (let ((width size) (height (/ size 2)))
+  (let 
+   ((width size) 
+    (height (/ size 2))
+    (textsize (- size 3)))
     (interpret-markup layout props
       #{
         \markup
         {
-          \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size)
+          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size)
         }
       #})))
   
