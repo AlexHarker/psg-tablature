@@ -300,10 +300,10 @@ psg-define-copedent =
 #(define (psg-pitch-to-markup pitch whiteout)
   (let ((alteration (ly:pitch-alteration pitch))
         (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7)))))
-       (item (if whiteout #:whiteout #:simple)))
+        (item (if whiteout #:whiteout #:simple)))
     (if (= alteration 0)
-        (markup (begin item letter))
-        (markup (begin item (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
+      (markup (begin item letter))
+      (markup (begin item (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
 
 #(define (psg-string-numbers-makuplist copedent)
   (psg-markuplist-loop 1 (psg-copedent-num-strings copedent) (lambda (x) (markup (#:whiteout (number->string x))))))
@@ -350,7 +350,7 @@ psg-define-copedent =
       #})))
 
 #(define (psg-string-loop copedent size id labelproc)
-  (markup (#:override `(baseline-skip . ,(/ size 2.2)) ( make-column-markup
+  (markup (#:override `(baseline-skip . ,(/ size 2.2)) (make-column-markup
     (psg-markuplist-loop 0 (psg-copedent-num-strings copedent)
       (lambda (x)
         (begin
