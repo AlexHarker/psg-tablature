@@ -232,12 +232,12 @@ psg-define-copedent =
   (append active (list (list id amount))))
 
 #(define (psg-tab-engraver context)
-  (let ((copedent '())
+  (let 
+   ((copedent (ly:context-property context 'copedent))
     (active '())
     (offset #t))
     (make-engraver
       ((initialize engraver)
-        (set! copedent (ly:context-property context 'copedent))
         (if (not (psg-copedent? copedent))
           (ly:error "Copedent is not defined for PSGTabStaff"))
         (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active offset)))
@@ -266,7 +266,7 @@ psg-define-copedent =
         (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7))))))
     (if (= alteration 0)
         (list (markup (#:simple letter)))
-        (list (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.52 (#:fontsize -4 (make-accidental-markup alteration))))))))))
+        (list (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration))))))))))
 
 #(define (psg-string-numbers copedent)
   (define (psg-string-number-list idx num)
