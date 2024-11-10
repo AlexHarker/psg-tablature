@@ -289,25 +289,27 @@ psg-define-copedent =
   
 %% Markup for copedents
 
+#(define (psg-markuplist-loop from to proc)
+  (define (loop-body idx from)
+      (if (>= idx to)
+          (list (proc idx))
+          (append (list (proc idx)) (loop-body (+ idx 1) to))))
+  (loop-body from to))
+
 #(define (pitch-to-markup pitch)
   (let ((alteration (ly:pitch-alteration pitch))
         (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7))))))
     (if (= alteration 0)
-        (list (markup (#:whiteout letter)))
-        (list (markup (#:whiteout (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration))))))))))))
+        (markup (#:whiteout letter))
+        (markup (#:whiteout (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
 
 #(define (psg-string-numbers copedent)
-  (define (psg-string-number-list idx num)
-    (let ((str (number->string idx)))
-      (if (>= idx num)
-          (list (markup (#:whiteout str)))
-          (append (list (markup (#:whiteout str))) (psg-string-number-list (+ idx 1) num)))))
-  (psg-string-number-list 1 (psg-copedent-num-strings copedent)))
+  (psg-markuplist-loop 1 (psg-copedent-num-strings copedent) (lambda (x)  (markup (#:whiteout (number->string x))))))
 
 #(define (psg-string-names copedent)
   (define strings (psg-copedent-strings copedent))
-  (define (psg-string-name-list idx num)
-    (let ((item (pitch-to-markup (list-ref strings idx))))
+  (psg-markuplist-loop 0  (- (psg-copedent-num-strings copedent) 1) (lambda (x)  (pitch-to-markup (list-ref strings x)))))
+
       (begin (if (>= idx num)
           (begin item)
           (append item (psg-string-name-list (+ idx 1) num))))))
