@@ -1,7 +1,7 @@
 \version "2.24.1"
 
 \include "psg-tablature.ly"
-%\include "psg-copedent.ly"
+\include "psg-copedent.ly"
 
 \header
 {
@@ -37,12 +37,6 @@ myNotes = \transpose c c'
 
     \context
     {
-      \Staff
-      \omit StringNumber
-    }
-    
-    \context
-    {
       \PedalSteelTab 
       copedent = \copedentE
       psgTabInSpace = ##t
@@ -50,7 +44,7 @@ myNotes = \transpose c c'
   }
   
   \new StaffGroup <<
-    \new Staff
+    \new PedalSteelStaff
     {
       \clef "G"
       \key a \major

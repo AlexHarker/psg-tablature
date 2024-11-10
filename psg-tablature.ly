@@ -339,4 +339,18 @@ psg-define-copedent =
     
     \inherit-acceptability PedalSteelTab TabStaff
     \inherit-acceptability TabStaff PedalSteelTab
+    
+    \context
+    {
+      \Staff
+      \omit StringNumber
+      \name PedalSteelStaff
+      \alias Staff
+
+      \omit StringNumber
+    }
+    
+    \inherit-acceptability PedalSteelStaff Staff
+    \inherit-acceptability Staff PedalSteelStaff
+    
 }
