@@ -22,14 +22,22 @@ myNotes = \transpose c c'
   system-system-spacing = #'((basic-distance . 20) (padding . 3))
 }
 
-\markup {  \psg-copedent-diagram  {\copedentE} #4 }
+\markup
+{  
+  \column
+  {
+    \vspace #3
+    \fill-line {\psg-copedent-diagram \copedentE #4 } 
+    \vspace #3
+  }
+}
 
 
 \score
 {
   \layout
   {
-    indent = 40
+    indent = 30
 
     \context
     {

@@ -364,7 +364,7 @@ psg-define-copedent =
         {
           \override #'(box-padding . 1)
           \override #'(thickness . 0)
-          \box \line #(psg-pedal-lever-loop copedent size)
+          \line #(psg-pedal-lever-loop copedent size)
         }
       #})))
   
