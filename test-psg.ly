@@ -52,9 +52,11 @@ myNotes = \transpose c c'
       
       \override TabNoteHead.extra-offset = #'(0 . -0.5)
       \override TabNoteHead.font-size = #-3
-      \override TabNoteHead.whiteout = ##f
+     % \override TabNoteHead.whiteout = ##f
       
       copedent = \copedentE
+      psgTabInSpace = ##t
+      
       #(psg-tab-clef  #{\copedentE#} #t)
     }
     \inherit-acceptability PedalSteelTab TabStaff

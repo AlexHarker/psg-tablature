@@ -112,6 +112,7 @@ psgOff =
 %% Context properties
 
 #(set-object-property! 'copedent 'translation-type? psg-copedent?)
+#(set-object-property! 'psgTabInSpace 'translation-type? boolean?)
 
 %% Copedent definition functions
 
@@ -234,8 +235,8 @@ psg-define-copedent =
 #(define (psg-tab-engraver context)
   (let 
    ((copedent (ly:context-property context 'copedent))
-    (active '())
-    (offset #t))
+    (offset (ly:context-property context 'psgTabInSpace))
+    (active '()))
     (make-engraver
       ((initialize engraver)
         (if (not (psg-copedent? copedent))
@@ -262,8 +263,11 @@ psg-define-copedent =
 %% Clef stencil
 
 #(define (psg-tab-clef copedent inspace)
+   (define (height-calculate offset)
+     (+ (* (- (psg-copedent-num-strings copedent) 1)  0.75) offset))
   (let 
-    ((height (if inspace 6.2 7)))
+    ((height (if inspace (height-calculate -0.55)  (height-calculate -0.59)))
+     (line-height (if inspace (* (psg-copedent-num-strings copedent) 1.5)  (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
     (begin 
       #{
         \override Clef.stencil = #(lambda (grob) 
@@ -273,12 +277,12 @@ psg-define-copedent =
               \override #'(baseline-skip . 1.5)
               \concat
               {
-                \hspace #-0.6
+                \hspace #-0.3
                 \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers copedent)
-                \hspace #0.2
+                \hspace #0.4
                 \raise #height \center-column \sans \fontsize #-3 #(psg-string-names copedent)
-                \hspace #0.2
-                \lower #7.5 \draw-line #'(0 . 15)
+                \hspace #0.5
+                \lower #(/ line-height 2)  \draw-line #(cons 0 line-height)
               }
             #}))
       #})))
@@ -289,15 +293,15 @@ psg-define-copedent =
   (let ((alteration (ly:pitch-alteration pitch))
         (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7))))))
     (if (= alteration 0)
-        (list (markup (#:simple letter)))
-        (list (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration))))))))))
+        (list (markup (#:whiteout letter)))
+        (list (markup (#:whiteout (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration))))))))))))
 
 #(define (psg-string-numbers copedent)
   (define (psg-string-number-list idx num)
     (let ((str (number->string idx)))
       (if (>= idx num)
-          (list (markup (#:simple str)))
-          (append (list (markup (#:simple str))) (psg-string-number-list (+ idx 1) num)))))
+          (list (markup (#:whiteout str)))
+          (append (list (markup (#:whiteout str))) (psg-string-number-list (+ idx 1) num)))))
   (psg-string-number-list 1 (psg-copedent-num-strings copedent)))
 
 #(define (psg-string-names copedent)
