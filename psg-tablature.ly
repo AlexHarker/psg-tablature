@@ -180,7 +180,7 @@ psg-define-copedent =
 #(define (calculate-alterations normal extended amount)
   (if (<= amount 1)
       (map (lambda (a) (* a amount)) normal)
-      (map (lambda (a b) (+ (* (- 2 amount) b) (* (- 1 amount) a))) normal extended)))
+      (map (lambda (a b) (+ (* (- amount 1) b) (* (- 2 amount) a))) normal extended)))
 
 #(define (psg-evaluation-loop adjust copedent active)
   (if (null? active)
