@@ -27,7 +27,7 @@ myNotes = \transpose c c'
   \column
   {
     \vspace #3
-    \fill-line {\psg-copedent-diagram \copedentE #4 } 
+    \fill-line {\psg-copedent-diagram \copedentE #5 } 
     \vspace #3
   }
 }

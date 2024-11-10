@@ -312,18 +312,31 @@ psg-define-copedent =
   (define strings (psg-copedent-strings copedent))
   (psg-markuplist-loop 0 (- (psg-copedent-num-strings copedent) 1) (lambda (x) (psg-pitch-to-markup (list-ref strings x) #t))))
 
+#(define (psg-alteration-markup copedent id stringnum)
+  (define alterations (psg-alterations-for-id copedent id))
+  (define alt (car alterations))
+  (define ext (cadr alterations))
+  (define basic (list-ref alt stringnum))
+  (define (numtostring x)
+    (if (> x 0) (string-join (list "+" (number->string x)) "") (number->string x)))
+  (if (or (null? ext) (= basic (list-ref ext stringnum)))
+      (if (= basic 0)
+          (markup #:simple "")
+          (markup #:simple (numtostring basic)))
+      (make-concat-markup (list (markup #:simple (numtostring basic)) (markup #:simple "/") (markup #:simple (numtostring (list-ref ext stringnum)))))))
+
 %% Copedent diagram markup
 
 #(define-markup-command (psg-copedent-diagram-box layout props size text)
   (number? markup?)
-  (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
+  (let ((width size) (height (/ size 2.5)) (thickness (/ size 80)))
     (interpret-markup layout props
       #{
         \markup
         {
           \overlay
           {
-            \translate #`(,(/ width 2) . ,(/ height 2)) \center-align \vcenter \sans \fontsize #-2 { #text }
+            \translate #`(,(/ width 2) . ,(/ height 2)) \center-align \vcenter \sans \fontsize #-4 { #text }
             \override #'(line-cap-style . butt)
             \override #'(line-join-style . miter)
             \override #'(filled . #f) \path #thickness
@@ -336,34 +349,32 @@ psg-define-copedent =
         }
       #})))
 
-#(define (psg-string-loop copedent size heading labelproc)
-  (make-column-markup 
-    (psg-markuplist-loop 0 (psg-copedent-num-strings copedent) 
-      (lambda (x) 
-        (begin 
-          #{ 
-            \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) heading)
+#(define (psg-string-loop copedent size id labelproc)
+  (make-column-markup
+    (psg-markuplist-loop 0 (psg-copedent-num-strings copedent)
+      (lambda (x)
+        (begin
+          #{
+            \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) (markup #:bold id))
           #})))))
 
 #(define (psg-pedal-lever-loop copedent size)
   (define id-list (psg-copedent-id-list copedent))
   (define strings (psg-copedent-strings copedent))
-  (psg-markuplist-loop 0 (psg-copedent-num-pedals-and-levers copedent) 
-    (lambda (x) 
+  (psg-markuplist-loop 0 (psg-copedent-num-pedals-and-levers copedent)
+    (lambda (x)
+      (define id (if (> x 0) (list-ref id-list (- x 1)) ""))
       (let
-        ((header (if (> x 0) (list-ref id-list (- x 1)) ""))
-         (listproc (if (> x 0) (lambda (x) "")  (lambda (x) (psg-pitch-to-markup (list-ref strings x) #f)))))
-        (psg-string-loop copedent size header listproc)))))
+        ((listproc (if (> x 0) (lambda (y) (psg-alteration-markup copedent id y)) (lambda (y) (markup #:bold (psg-pitch-to-markup (list-ref strings y) #f))))))
+        (psg-string-loop copedent size id listproc)))))
 
 #(define-markup-command (psg-copedent-diagram layout props copedent size)
   (psg-copedent? number?)
-  (let ((width size) (height (/ size 2)) (thickness (/ size 40)))
+  (let ((width size) (height (/ size 2)))
     (interpret-markup layout props
       #{
         \markup
         {
-          \override #'(box-padding . 1)
-          \override #'(thickness . 0)
           \line #(psg-pedal-lever-loop copedent size)
         }
       #})))
