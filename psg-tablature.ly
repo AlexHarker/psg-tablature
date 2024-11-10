@@ -210,8 +210,8 @@ psg-define-copedent =
 %% Clef stencil
 
 #(define (psg-tab-clef-stencil copedent in-space)
-   (define (height-calculate offset)
-     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) offset))
+   (define (height-calculate in-space)
+     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) in-space))
   (let
     ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
      (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
@@ -328,7 +328,7 @@ psg-define-copedent =
 
 #(define (psg-string-names-markuplist copedent)
   (define strings (psg-copedent-strings copedent))
-  (psg-markuplist-loop 0 (- (psg-copedent-num-strings copedent) 1) (lambda (x) (psg-pitch-to-markup (list-ref strings x) #t))))
+  (psg-markuplist-loop 0 (- (psg-copedent-num-strings copedent) 1) (lambda (x) (markup (#:whiteout (psg-pitch-to-markup (list-ref strings x) #t))))))
 
 #(define (psg-alteration-markup copedent id stringnum)
   (define alterations (psg-alterations-for-id copedent id))
