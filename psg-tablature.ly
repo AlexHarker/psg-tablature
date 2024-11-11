@@ -165,12 +165,36 @@ psg-define-copedent =
 
 %% Evaluation of copedents - here we define functions for deftermining the active tuning given a copedent and set of active pedals or levers
 
+#(define (naturalize-pitch p)
+   (let ((o (ly:pitch-octave p))
+         (a (* 4 (ly:pitch-alteration p)))
+         ;; alteration, a, in quarter tone steps,
+         ;; for historical reasons
+         (n (ly:pitch-notename p)))
+     (cond
+      ((and (> a 1) (or (eqv? n 6) (eqv? n 2)))
+       (set! a (- a 2))
+       (set! n (+ n 1)))
+      ((and (< a -1) (or (eqv? n 0) (eqv? n 3)))
+       (set! a (+ a 2))
+       (set! n (- n 1))))
+     (cond
+      ((> a 2) (set! a (- a 4)) (set! n (+ n 1)))
+      ((< a -2) (set! a (+ a 4)) (set! n (- n 1))))
+     (if (< n 0) (begin (set! o (- o 1)) (set! n (+ n 7))))
+     (if (> n 6) (begin (set! o (+ o 1)) (set! n (- n 7))))
+     (let ((np (ly:make-pitch o n (/ a 4))))
+       (if (equal? np p)
+         (begin p)
+         (naturalize-pitch np)))))
+
 #(define (transpose-string pitch alter)
-  (begin
-    (ly:make-pitch
+  (if (= alter 0)
+    (begin pitch)
+    (naturalize-pitch (ly:make-pitch
       (ly:pitch-octave pitch)
       (ly:pitch-notename pitch)
-      (+ (ly:pitch-alteration pitch) (/ alter 2)))))
+      (+ (ly:pitch-alteration pitch) (/ alter 2))))))
 
 #(define (sum-alterations prev add)
   (if (and (not (= add 0)) (not (= prev 0)))
