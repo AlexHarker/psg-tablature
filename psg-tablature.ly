@@ -287,18 +287,34 @@ psg-define-copedent =
       (ly:warning "No pedal or lever with id ~a in copedent - ignoring!" id)
       #f)))
 
-#(define (psg-id-find active id)
-  (if (null? active)
+#(define (psg-id-find record id)
+  (if (null? record)
     (begin #f)
-    (if (equal? (caar active) id)
-      (begin #t)
-      (psg-id-find (cdr active) id))))
+    (if (equal? (caar record) id)
+      (begin (car record))
+      (psg-id-find (cdr record) id))))
 
-#(define (psg-remove-id active id)
-  (filter (lambda (x) (not (equal? (car x) id))) active))
+#(define (psg-remove-id record id)
+  (filter (lambda (x) (not (equal? (car x) id))) record))
 
-#(define (psg-add-id active id amount)
-  (append active (list (list id amount))))
+#(define (psg-add-id record id data-object)
+  (append record (list (list id data-object))))
+
+#(define (make-bracket-grob context engraver id)   
+  (let ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
+	 (column (ly:context-property context 'currentMusicalColumn)))
+     (begin
+      (ly:spanner-set-bound! grob LEFT column)
+      (ly:grob-set-property! grob 'direction DOWN)
+      (ly:grob-set-property! grob 'style 'line)
+     (ly:grob-set-property! grob 'text (markup (#:fontsize -3 (#:sans ( #:bold id)))))
+        grob)))
+
+#(define (end-grob context grobs id)
+   (let ((grob (cadr (psg-id-find grobs id)))
+           (column (ly:context-property context 'currentCommandColumn)))
+      (ly:spanner-set-bound! grob RIGHT column)
+        (psg-remove-id grobs id)))
 
 #(define (psg-tab-engraver context)
   (let
@@ -306,13 +322,18 @@ psg-define-copedent =
      (in-space (ly:context-property context 'psgTabInSpace))
      (clef-style (if (equal? (ly:context-property context 'psgClefStyle) 'both) 0 (if (equal? (ly:context-property context 'psgClefStyle) 'numbers) 1 2)))
      (active '())
+     (changes '())
+     (grobs '())
      (clefs '())
      (note-heads '()))
+    
     (make-engraver
+     
       ((initialize engraver)
         (if (not (psg-copedent? copedent))
           (ly:error "Copedent is not defined for PSGTabStaff"))
         (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))
+      
       (listeners
         ((psg-pedal-or-lever-event engraver event)
           (define dir (ly:event-property event 'span-direction))
@@ -322,19 +343,27 @@ psg-define-copedent =
             (begin
               (if (eq? dir START)
                 (if (not (psg-id-find active id))
-                  (set! active (psg-add-id active id amount))
+                   (begin ;pedal/lever on
+                     (set! active (psg-add-id active id amount))
+                     (set! changes (psg-add-id changes id 1)))
                   (if (member (list id amount) active)
                     (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
-                    (set! active (psg-add-id (psg-remove-id active id) id amount))))
+                    (begin ;pedal/lever changed
+                       (set! active (psg-add-id (psg-remove-id active id) id amount))
+                       (set! changes (psg-add-id changes id 2)))))
                 (if (psg-id-find active id)
-                  (set! active (psg-remove-id active id))
+                  (begin ;pedal/lever off
+                     (set! active (psg-remove-id active id))
+                     (set! changes (psg-add-id changes id 0)))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
+      
       (acknowledgers
         ((clef-interface engraver grob source-engraver)
           (set! clefs (cons grob clefs)))
         ((note-head-interface engraver grob source-engraver)
           (set! note-heads (cons grob note-heads))))
+      
       ((process-acknowledged engraver)
         (for-each
           (lambda (clef)
@@ -348,7 +377,22 @@ psg-define-copedent =
               (ly:grob-set-property! note-head 'font-size -3)
               (ly:grob-set-property! note-head 'whiteout #f))
             note-heads))
-        (set! note-heads '())))))
+        (set! note-heads '()))
+      
+      ((process-music engraver)
+       (define (grob-loop)
+         (let ((id (car (car changes)))
+                (type (cadr (car changes))))
+           (case type
+             ((0) (set! grobs (end-grob context grobs id)))
+            ((1) (set! grobs (psg-add-id grobs id (make-bracket-grob context engraver id))))
+            ((2) ((set! grobs (end-grob grobs id)) (set! grobs (psg-add-id grobs id (make-bracket-grob context engraver id))))))
+           (set! changes (cdr changes))
+                 (if (null? changes)  (begin #f) (grob-loop))))
+        (if (not (null? changes)) (grob-loop)))
+      
+      ((stop-translation-timestep engraver)
+       (set! changes '())))))
   
 %% Markup for copedents
 
