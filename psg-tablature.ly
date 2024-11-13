@@ -303,8 +303,8 @@ psg-define-copedent =
   (for-each proc record)
   (begin '()))
         
-#(define (psg-make-change-markuplist id amount)
-   (let ((markuplist (list (markup #:simple id))))
+#(define (psg-make-change-markuplist id amount change)
+   (let ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id)))))
      (if (> amount 1)
          (begin
           (append! markuplist (list (markup #:simple "+")))
@@ -329,7 +329,7 @@ psg-define-copedent =
             (else #f)))
      (begin markuplist)))
 
-#(define (psg-make-bracket-grob context engraver id amount)   
+#(define (psg-make-bracket-grob context engraver id amount change)   
   (let ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
         (column (ly:context-property context 'currentMusicalColumn)))
     (begin
@@ -337,13 +337,15 @@ psg-define-copedent =
       (ly:grob-set-property! grob 'direction DOWN)
       (ly:grob-set-property! grob 'style 'line)
       (ly:grob-set-property! grob 'font-shape 'upright)
-      (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount)))))))
+      (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount change)))))))
       grob)))
 
-#(define (psg-end-bracket-grob context grobs id)
+#(define (psg-end-bracket-grob context grobs id change)
   (let ((grob (cadr (psg-id-find grobs id)))
         (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
+    (if change
+        (ly:grob-set-property! grob 'edge-height '(0 . 0)))
     (psg-remove-id grobs id)))
 
 #(define (psg-tab-engraver context)
@@ -408,14 +410,14 @@ psg-define-copedent =
                 (type (caadr id-grob))
                 (amount (cadadr id-grob)))
             (case type
-              ((0) (set! grobs (psg-end-bracket-grob context grobs id)))
-              ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount))))
-              ((2) (set! grobs (psg-end-bracket-grob context grobs id)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount))))))))))
+              ((0) (set! grobs (psg-end-bracket-grob context grobs id #f)))
+              ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #f))))
+              ((2) (set! grobs (psg-end-bracket-grob context grobs id #t)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #t))))))))))
       ;; ------- finalize -------
       ((finalize engraver)
        (set! grobs (psg-loop-and-clear grobs (lambda (id-grob)                             
           (let ((id (car id-grob)))
-            (set! grobs (psg-end-bracket-grob context grobs id))))))))))
+            (set! grobs (psg-end-bracket-grob context grobs id #f))))))))))
   
 %% Markup for copedents
 
