@@ -96,16 +96,18 @@ psgOff =
 #(define (psg-check-pedals-and-levers strings pedal-and-levers)
   (if (null? pedal-and-levers)
     (begin #t)
-    (let ((current-alterations (cadar pedal-and-levers))
-      (extended-alterations (caddar pedal-and-levers)))
+    (let 
+      ((current-alterations (cadar pedal-and-levers))
+       (extended-alterations (caddar pedal-and-levers)))
       (if (and (= (length current-alterations) (length strings)) (or (null? extended-alterations)(= (length extended-alterations) (length strings))))
         (and (psg-check-alterations current-alterations) (psg-check-alterations extended-alterations) (psg-check-pedals-and-levers strings (cdr pedal-and-levers)))
         (ly:error ("Number of string alterations in pedal or lever doesn't match the number of strings!"))))))
 
 #(define (psg-copedent? copedent)
   (if (and (not (null? copedent)) (list? copedent))
-    (let ((strings (car copedent))
-      (pedals-and-levers (cdr copedent)))
+    (let 
+      ((strings (car copedent))
+       (pedals-and-levers (cdr copedent)))
       (and (psg-check-strings strings) (psg-check-pedals-and-levers strings pedals-and-levers)))
     (begin #f)))
 
@@ -159,34 +161,35 @@ psg-define-copedent =
   (define id-list (psg-copedent-id-list copedent))
   (define id-sublist (member id id-list))
   (if id-sublist
-    (let ((pedals-and-levers (psg-copedent-pedals-and-levers copedent)))
-      (cdr (list-ref pedals-and-levers (- (length pedals-and-levers) (length id-sublist)))))
+    (let 
+      ((pedals-and-levers (psg-copedent-pedals-and-levers copedent)))
+       (cdr (list-ref pedals-and-levers (- (length pedals-and-levers) (length id-sublist)))))
     (begin #f)))
 
 %% Evaluation of copedents - here we define functions for deftermining the active tuning given a copedent and set of active pedals or levers
 
 #(define (naturalize-pitch p)
-   (let ((o (ly:pitch-octave p))
-         (a (* 4 (ly:pitch-alteration p)))
-         ;; alteration, a, in quarter tone steps,
-         ;; for historical reasons
-         (n (ly:pitch-notename p)))
-     (cond
-      ((and (> a 1) (or (eqv? n 6) (eqv? n 2)))
-       (set! a (- a 2))
-       (set! n (+ n 1)))
-      ((and (< a -1) (or (eqv? n 0) (eqv? n 3)))
-       (set! a (+ a 2))
-       (set! n (- n 1))))
-     (cond
-      ((> a 2) (set! a (- a 4)) (set! n (+ n 1)))
-      ((< a -2) (set! a (+ a 4)) (set! n (- n 1))))
-     (if (< n 0) (begin (set! o (- o 1)) (set! n (+ n 7))))
-     (if (> n 6) (begin (set! o (+ o 1)) (set! n (- n 7))))
-     (let ((np (ly:make-pitch o n (/ a 4))))
-       (if (equal? np p)
-         (begin p)
-         (naturalize-pitch np)))))
+   (let 
+      ((o (ly:pitch-octave p))
+       (a (* 4 (ly:pitch-alteration p)))    
+       (n (ly:pitch-notename p)))
+      (cond
+        ((and (> a 1) (or (eqv? n 6) (eqv? n 2)))
+        (set! a (- a 2))
+        (set! n (+ n 1)))
+        ((and (< a -1) (or (eqv? n 0) (eqv? n 3)))
+         (set! a (+ a 2))
+         (set! n (- n 1))))
+      (cond
+        ((> a 2) (set! a (- a 4)) (set! n (+ n 1)))
+        ((< a -2) (set! a (+ a 4)) (set! n (- n 1))))
+      (if (< n 0) (begin (set! o (- o 1)) (set! n (+ n 7))))
+      (if (> n 6) (begin (set! o (+ o 1)) (set! n (- n 7))))
+      (let 
+        ((np (ly:make-pitch o n (/ a 4))))
+        (if (equal? np p)
+          (begin p)
+          (naturalize-pitch np)))))
 
 #(define (transpose-string pitch alter)
   (if (= alter 0)
@@ -209,8 +212,9 @@ psg-define-copedent =
 #(define (psg-evaluation-loop adjust copedent active)
   (if (null? active)
     (begin adjust)
-    (let ((alterations (psg-alterations-for-id copedent (caar active)))
-      (amount (cadar active)))
+    (let 
+      ((alterations (psg-alterations-for-id copedent (caar active)))
+       (amount (cadar active)))
       (if alterations
         (begin
           (set! adjust (psg-evaluation-loop adjust copedent (cdr active)))
@@ -238,8 +242,8 @@ psg-define-copedent =
   (define (height-calculate in-space)
     (+ (* (- (psg-copedent-num-strings copedent) 1) 0.75) in-space))
   (let
-   ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
-    (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
+    ((height (if in-space (height-calculate -0.55) (height-calculate -0.59)))
+     (line-height (if in-space (* (psg-copedent-num-strings copedent) 1.5) (* (- (psg-copedent-num-strings copedent) 1) 1.5))))
    (lambda (grob)
     (grob-interpret-markup grob
       #{
@@ -253,7 +257,7 @@ psg-define-copedent =
           #{
             \markup 
             \concat
-            { 
+            {
              \raise #height \center-column \sans \fontsize #-3 #(psg-string-numbers-makuplist copedent)
              \hspace #0.4
              \raise #height \center-column \sans \fontsize #-3 #(psg-string-names-markuplist copedent)
@@ -304,34 +308,36 @@ psg-define-copedent =
   (begin '()))
         
 #(define (psg-make-change-markuplist id amount change)
-   (let ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id)))))
-     (if (> amount 1)
-         (begin
-          (append! markuplist (list (markup #:simple "+")))
-           (set! amount (- amount 1))))
-      (if (not (integer? amount))
-          (cond 
-            ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
-            ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
-            ((= amount (/ 2 3)) (append! markuplist (list (markup #:simple "⅔"))))
-            ((= amount (/ 1 4)) (append! markuplist (list (markup #:simple "¼"))))
-            ((= amount (/ 3 4)) (append! markuplist (list (markup #:simple "¾"))))
-            ((= amount (/ 1 5)) (append! markuplist (list (markup #:simple "⅕"))))
-            ((= amount (/ 2 5)) (append! markuplist (list (markup #:simple "⅖"))))
-            ((= amount (/ 3 5)) (append! markuplist (list (markup #:simple "⅗"))))
-            ((= amount (/ 4 5)) (append! markuplist (list (markup #:simple "⅘"))))
-            ((= amount (/ 1 6)) (append! markuplist (list (markup #:simple "⅙"))))
-            ((= amount (/ 5 6)) (append! markuplist (list (markup #:simple "⅚"))))
-            ((= amount (/ 1 8)) (append! markuplist (list (markup #:simple "⅛"))))
-            ((= amount (/ 3 8)) (append! markuplist (list (markup #:simple "⅜"))))
-            ((= amount (/ 5 8)) (append! markuplist (list (markup #:simple "⅝"))))
-            ((= amount (/ 7 8)) (append! markuplist (list (markup #:simple "⅞"))))
-            (else #f)))
-     (begin markuplist)))
+  (let 
+    ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id)))))
+    (if (> amount 1)
+      (begin
+        (append! markuplist (list (markup #:simple "+")))
+        (set! amount (- amount 1))))
+    (if (not (integer? amount))
+      (cond 
+        ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
+        ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
+        ((= amount (/ 2 3)) (append! markuplist (list (markup #:simple "⅔"))))
+        ((= amount (/ 1 4)) (append! markuplist (list (markup #:simple "¼"))))
+        ((= amount (/ 3 4)) (append! markuplist (list (markup #:simple "¾"))))
+        ((= amount (/ 1 5)) (append! markuplist (list (markup #:simple "⅕"))))
+        ((= amount (/ 2 5)) (append! markuplist (list (markup #:simple "⅖"))))
+        ((= amount (/ 3 5)) (append! markuplist (list (markup #:simple "⅗"))))
+        ((= amount (/ 4 5)) (append! markuplist (list (markup #:simple "⅘"))))
+        ((= amount (/ 1 6)) (append! markuplist (list (markup #:simple "⅙"))))
+        ((= amount (/ 5 6)) (append! markuplist (list (markup #:simple "⅚"))))
+        ((= amount (/ 1 8)) (append! markuplist (list (markup #:simple "⅛"))))
+        ((= amount (/ 3 8)) (append! markuplist (list (markup #:simple "⅜"))))
+        ((= amount (/ 5 8)) (append! markuplist (list (markup #:simple "⅝"))))
+        ((= amount (/ 7 8)) (append! markuplist (list (markup #:simple "⅞"))))
+        (else #f)))
+    (begin markuplist)))
 
 #(define (psg-make-bracket-grob context engraver id amount change)   
-  (let ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
-        (column (ly:context-property context 'currentMusicalColumn)))
+  (let 
+    ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
+     (column (ly:context-property context 'currentMusicalColumn)))
     (begin
       (ly:spanner-set-bound! grob LEFT column)
       (ly:grob-set-property! grob 'direction DOWN)
@@ -341,8 +347,9 @@ psg-define-copedent =
       grob)))
 
 #(define (psg-end-bracket-grob context grobs id change)
-  (let ((grob (cadr (psg-id-find grobs id)))
-        (column (ly:context-property context 'currentCommandColumn)))
+  (let 
+    ((grob (cadr (psg-id-find grobs id)))
+     (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
     (if change
         (ly:grob-set-property! grob 'edge-height '(0 . 0)))
@@ -406,9 +413,10 @@ psg-define-copedent =
       ;; ------- process music -------
       ((process-music engraver)
         (set! changes (psg-loop-and-clear changes (lambda (id-grob)                             
-          (let ((id (car id-grob))
-                (type (caadr id-grob))
-                (amount (cadadr id-grob)))
+          (let 
+            ((id (car id-grob))
+             (type (caadr id-grob))
+             (amount (cadadr id-grob)))
             (case type
               ((0) (set! grobs (psg-end-bracket-grob context grobs id #f)))
               ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #f))))
@@ -416,7 +424,8 @@ psg-define-copedent =
       ;; ------- finalize -------
       ((finalize engraver)
        (set! grobs (psg-loop-and-clear grobs (lambda (id-grob)                             
-          (let ((id (car id-grob)))
+          (let 
+            ((id (car id-grob)))
             (set! grobs (psg-end-bracket-grob context grobs id #f))))))))))
   
 %% Markup for copedents
@@ -427,9 +436,10 @@ psg-define-copedent =
     (append (list (proc idx)) (psg-markuplist-loop (+ idx 1) to proc))))
 
 #(define (psg-pitch-to-markup pitch whiteout)
-  (let ((alteration (ly:pitch-alteration pitch))
-        (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7)))))
-        (item (if whiteout #:whiteout #:simple)))
+  (let 
+    ((alteration (ly:pitch-alteration pitch))
+     (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7)))))
+     (item (if whiteout #:whiteout #:simple)))
     (if (= alteration 0)
       (markup (begin item letter))
       (markup (begin item (make-concat-markup (list (markup #:simple letter) (markup (#:raise 0.6 (#:fontsize -4 (make-accidental-markup alteration)))))))))))
@@ -454,7 +464,7 @@ psg-define-copedent =
      (if (= basic 0)
         (markup #:simple "")
         (if names 
-          (get-pitch 1) 
+          (get-pitch 1)
           (markup #:simple (numtostring basic))))
      (if names 
         (make-concat-markup (list (get-pitch 1) (markup #:simple "/") (get-pitch 2)))
@@ -464,7 +474,10 @@ psg-define-copedent =
 
 #(define-markup-command (psg-copedent-diagram-box layout props size text color)
   (number? markup? color?)
-  (let ((width size) (height (/ size 2.5)) (thickness (/ size 80)))
+  (let 
+    ((width size) 
+     (height (/ size 2.5)) 
+     (thickness (/ size 80)))
     (interpret-markup layout props
       #{
         \markup
@@ -507,10 +520,10 @@ psg-define-copedent =
 
 #(define-markup-command (psg-copedent-diagram layout props copedent size)
   (psg-copedent? number?)
-  (let 
-   ((width size) 
-    (height (/ size 2))
-    (textsize (- size 3)))
+  (let
+    ((width size)
+     (height (/ size 2))
+     (textsize (- size 3)))
     (interpret-markup layout props
       #{
         \markup
