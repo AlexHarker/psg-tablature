@@ -51,7 +51,7 @@ make-psg-pedal-event =
     (begin
       (ly:warning "Pedal or lever event with zero or negative amount - setting to 1")
       (set! amount 1)))
-  (make-music 'PsgPedalOrLeverEvent 'span-direction span-dir 'id (psg-id-to-string id) 'amount amount))
+  (make-music 'PsgPedalOrLeverEvent 'span-direction span-dir 'psgID (psg-id-to-string id) 'amount amount))
 
 psgFractional =
 #(define-music-function
@@ -116,6 +116,8 @@ psgOff =
 #(set-object-property! 'psgCopedent 'translation-type? psg-copedent?)
 #(set-object-property! 'psgTabInSpace 'translation-type? boolean?)
 #(set-object-property! 'psgClefStyle 'translation-type? symbol?)
+#(set-object-property! 'psgID 'backend-type? string?)
+#(set-object-property! 'psgAmount 'backend-type? number?)
 
 %% Copedent definition functions
 
@@ -340,6 +342,8 @@ psg-define-copedent =
      (column (ly:context-property context 'currentMusicalColumn)))
     (begin
       (ly:spanner-set-bound! grob LEFT column)
+      (ly:grob-set-property! grob 'psgID id)
+      (ly:grob-set-property! grob 'psgAmount amount)
       (ly:grob-set-property! grob 'direction DOWN)
       (ly:grob-set-property! grob 'style 'line)
       (ly:grob-set-property! grob 'font-shape 'upright)
@@ -375,7 +379,7 @@ psg-define-copedent =
       (listeners
         ((psg-pedal-or-lever-event engraver event)
           (define dir (ly:event-property event 'span-direction))
-          (define id (ly:event-property event 'id))
+          (define id (ly:event-property event 'psgID))
           (define amount (ly:event-property event 'amount))
           (if (psg-valid-pedal-or-lever copedent id amount)
             (begin
