@@ -299,7 +299,11 @@ psg-define-copedent =
 #(define (psg-add-id record id data-object)
   (append record (list (list id data-object))))
 
-#(define (make-bracket-grob context engraver id)   
+#(define (psg-loop-and-clear record proc)
+  (for-each proc record)
+  (begin '()))
+        
+#(define (psg-make-bracket-grob context engraver id)   
   (let ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
         (column (ly:context-property context 'currentMusicalColumn)))
     (begin
@@ -310,7 +314,7 @@ psg-define-copedent =
       (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold id)))))
       grob)))
 
-#(define (end-grob context grobs id)
+#(define (psg-end-bracket-grob context grobs id)
   (let ((grob (cadr (psg-id-find grobs id)))
         (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
@@ -364,31 +368,22 @@ psg-define-copedent =
           (set! note-heads (cons grob note-heads))))
       ;; ------- process acknowledged -------
       ((process-acknowledged engraver)
-        (for-each
-          (lambda (clef)
-            (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space clef-style)))
-          clefs)
-        (set! clefs '())
+        (set! clefs (psg-loop-and-clear clefs (lambda (clef)
+            (ly:grob-set-property! clef 'stencil (psg-tab-clef-stencil copedent in-space clef-style)))))
         (if in-space
-          (for-each
-            (lambda (note-head)
+           (set! note-heads (psg-loop-and-clear note-heads (lambda (note-head)
               (ly:grob-set-property! note-head 'extra-offset '(0 . -0.5))
               (ly:grob-set-property! note-head 'font-size -3)
-              (ly:grob-set-property! note-head 'whiteout #f))
-            note-heads))
-        (set! note-heads '()))
+              (ly:grob-set-property! note-head 'whiteout #f))))))
       ;; ------- process music -------
       ((process-music engraver)
-        (define (grob-loop)
-          (let ((id (car (car changes)))
-                (type (cadr (car changes))))
+        (set! changes (psg-loop-and-clear changes (lambda (id-grob)                             
+          (let ((id (car id-grob))
+                (type (cadr id-grob)))
             (case type
-              ((0) (set! grobs (end-grob context grobs id)))
-              ((1) (set! grobs (psg-add-id grobs id (make-bracket-grob context engraver id))))
-              ((2) ((set! grobs (end-grob grobs id)) (set! grobs (psg-add-id grobs id (make-bracket-grob context engraver id))))))
-            (set! changes (cdr changes))
-            (if (null? changes) (begin #f) (grob-loop))))
-        (if (not (null? changes)) (grob-loop)))
+              ((0) (set! grobs (psg-end-bracket-grob context grobs id)))
+              ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id))))
+              ((2) ((set! grobs (psg-end-bracket-grob grobs id)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id)))))))))))
       ;; ------- stop-translation-timestep -------
       ((stop-translation-timestep engraver)
         (set! changes '())))))
