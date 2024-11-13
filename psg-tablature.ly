@@ -294,7 +294,7 @@ psg-define-copedent =
   (if (null? record)
     (begin #f)
     (if (equal? (caar record) id)
-      (begin (car record))
+      (begin (cadar record))
       (psg-id-find (cdr record) id))))
 
 #(define (psg-remove-id record id)
@@ -348,7 +348,7 @@ psg-define-copedent =
 
 #(define (psg-end-bracket-grob context grobs id change)
   (let 
-    ((grob (cadr (psg-id-find grobs id)))
+    ((grob (psg-id-find grobs id))
      (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
     (if change
