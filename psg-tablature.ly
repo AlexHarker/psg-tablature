@@ -307,7 +307,8 @@ psg-define-copedent =
       (ly:spanner-set-bound! grob LEFT column)
       (ly:grob-set-property! grob 'direction DOWN)
       (ly:grob-set-property! grob 'style 'line)
-     (ly:grob-set-property! grob 'text (markup (#:fontsize -3 (#:sans ( #:bold id)))))
+      (ly:grob-set-property! grob 'font-shape 'upright)
+     (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold id)))))
         grob)))
 
 #(define (end-grob context grobs id)
@@ -326,14 +327,13 @@ psg-define-copedent =
      (grobs '())
      (clefs '())
      (note-heads '()))
-    
     (make-engraver
-     
+;; ------- initialize -------
       ((initialize engraver)
         (if (not (psg-copedent? copedent))
           (ly:error "Copedent is not defined for PSGTabStaff"))
         (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))
-      
+;; ------- listeners -------
       (listeners
         ((psg-pedal-or-lever-event engraver event)
           (define dir (ly:event-property event 'span-direction))
@@ -357,13 +357,13 @@ psg-define-copedent =
                      (set! changes (psg-add-id changes id 0)))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
-      
+ ;; ------- acknowledgers -------
       (acknowledgers
         ((clef-interface engraver grob source-engraver)
           (set! clefs (cons grob clefs)))
         ((note-head-interface engraver grob source-engraver)
           (set! note-heads (cons grob note-heads))))
-      
+      ;; ------- process acknowledged -------
       ((process-acknowledged engraver)
         (for-each
           (lambda (clef)
@@ -378,7 +378,7 @@ psg-define-copedent =
               (ly:grob-set-property! note-head 'whiteout #f))
             note-heads))
         (set! note-heads '()))
-      
+ ;; ------- process music -------
       ((process-music engraver)
        (define (grob-loop)
          (let ((id (car (car changes)))
@@ -390,7 +390,7 @@ psg-define-copedent =
            (set! changes (cdr changes))
                  (if (null? changes)  (begin #f) (grob-loop))))
         (if (not (null? changes)) (grob-loop)))
-      
+ ;; ------- stop-translation-timestep -------
       ((stop-translation-timestep engraver)
        (set! changes '())))))
   
