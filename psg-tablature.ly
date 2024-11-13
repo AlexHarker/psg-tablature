@@ -431,7 +431,48 @@ psg-define-copedent =
           (let 
             ((id (car id-grob)))
             (set! grobs (psg-end-bracket-grob context grobs id #f))))))))))
-  
+
+#(define (psg-make-alignment-grob context engraver)   
+  (let 
+    ((grob (ly:engraver-make-grob engraver 'DynamicLineSpanner '()))
+     (column (ly:context-property context 'currentCommandColumn)))
+    (begin 
+      (ly:spanner-set-bound! grob LEFT column)
+      grob)))
+
+#(define (psg-end-alignment-grob context grob)
+  (let 
+    ((column (ly:context-property context 'currentCommandColumn)))
+    (ly:spanner-set-bound! grob RIGHT column)))
+
+#(define (psg-tab-alignment-engraver context)
+  (let
+    ((copedent (ly:context-property context 'psgCopedent))
+     (new-grobs '())
+     (alignment-grobs '()))
+    (make-engraver
+      ;; ------- acknowledgers -------
+      (acknowledgers
+        ((ottava-bracket-interface engraver grob source-engraver)
+          (set! new-grobs (cons grob new-grobs))))
+      ;; ------- process acknowledged -------
+      ((process-acknowledged engraver)
+        (set! new-grobs (psg-loop-and-clear new-grobs (lambda (grob)
+          (let
+            ((id (ly:grob-property grob 'psgID)))
+            (ly:axis-group-interface::add-element (psg-id-find alignment-grobs id) grob))))))
+      ;; ------- process-music -------
+      ((process-music engraver)   
+       (when (and (null? alignment-grobs) (not (null? (psg-copedent-id-list copedent))))
+         (for-each (lambda (id) 
+          (set! alignment-grobs (psg-add-id alignment-grobs id (psg-make-alignment-grob context engraver)))) (psg-copedent-id-list copedent))))
+      ;; ------- finalize -------
+      ((finalize engraver)
+        (let 
+          ((column (ly:context-property context 'currentCommandColumn)))
+          (set! alignment-grobs (psg-loop-and-clear alignment-grobs (lambda (id-grob)                             
+            (psg-end-alignment-grob context (cadr id-grob))))))))))
+              
 %% Markup for copedents
 
 #(define (psg-markuplist-loop idx to proc)
@@ -532,7 +573,7 @@ psg-define-copedent =
       #{
         \markup
         {
-          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95) #f)
+          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95) #t)
         }
       #})))
   
@@ -546,6 +587,7 @@ psg-define-copedent =
       \name PedalSteelTab
       \alias TabStaff
       \consists #psg-tab-engraver
+      \consists #psg-tab-alignment-engraver
       
       psgTabInSpace = ##t
       psgClefStyle = #'both
