@@ -383,7 +383,7 @@ psg-define-copedent =
             (case type
               ((0) (set! grobs (psg-end-bracket-grob context grobs id)))
               ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id))))
-              ((2) ((set! grobs (psg-end-bracket-grob grobs id)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id)))))))))))
+              ((2) (set! grobs (psg-end-bracket-grob context grobs id)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id))))))))))
       ;; ------- stop-translation-timestep -------
       ((stop-translation-timestep engraver)
         (set! changes '())))))
