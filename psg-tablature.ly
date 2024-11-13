@@ -348,16 +348,16 @@ psg-define-copedent =
                 (if (not (psg-id-find active id))
                   (begin ;pedal/lever on
                     (set! active (psg-add-id active id amount))
-                    (set! changes (psg-add-id changes id 1)))
+                    (set! changes (psg-add-id changes id (list 1 amount))))
                   (if (member (list id amount) active)
                     (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
                     (begin ;pedal/lever changed
                       (set! active (psg-add-id (psg-remove-id active id) id amount))
-                      (set! changes (psg-add-id changes id 2)))))
+                      (set! changes (psg-add-id changes id (list 2 amount))))))
                 (if (psg-id-find active id)
                   (begin ;pedal/lever off
                     (set! active (psg-remove-id active id))
-                    (set! changes (psg-add-id changes id 0)))
+                    (set! changes (psg-add-id changes id (list 0 amount))))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
       ;; ------- acknowledgers -------
@@ -379,7 +379,7 @@ psg-define-copedent =
       ((process-music engraver)
         (set! changes (psg-loop-and-clear changes (lambda (id-grob)                             
           (let ((id (car id-grob))
-                (type (cadr id-grob)))
+                (type (caadr id-grob)))
             (case type
               ((0) (set! grobs (psg-end-bracket-grob context grobs id)))
               ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id))))
