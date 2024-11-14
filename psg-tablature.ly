@@ -347,6 +347,7 @@ psg-define-copedent =
       (ly:grob-set-property! grob 'direction DOWN)
       (ly:grob-set-property! grob 'style 'line)
       (ly:grob-set-property! grob 'font-shape 'upright)
+      (ly:grob-set-property! grob 'Y-offset -2)
       (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount change)))))))
       grob)))
 
