@@ -347,7 +347,6 @@ psg-define-copedent =
       (ly:grob-set-property! grob 'direction DOWN)
       (ly:grob-set-property! grob 'style 'line)
       (ly:grob-set-property! grob 'font-shape 'upright)
-      (ly:grob-set-property! grob 'Y-offset -2)
       (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount change)))))))
       grob)))
 
@@ -461,6 +460,7 @@ psg-define-copedent =
         (set! new-grobs (psg-loop-and-clear new-grobs (lambda (grob)
           (let
             ((id (ly:grob-property grob 'psgID)))
+            (ly:grob-set-property! grob 'Y-offset -2)
             (ly:axis-group-interface::add-element (psg-id-find alignment-grobs id) grob))))))
       ;; ------- process-music -------
       ((process-music engraver)   
