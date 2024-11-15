@@ -498,11 +498,12 @@ psg-define-copedent =
             ((id (car id-grob)))
             (set! grobs (psg-end-bracket-grob context grobs id #f))))))))))
 
-#(define (psg-make-alignment-grob context engraver)   
+#(define (psg-make-alignment-grob context engraver idx)   
   (let 
     ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracketLineSpanner '()))
      (column (ly:context-property context 'currentCommandColumn)))
     (begin 
+      (ly:grob-set-property! grob 'outside-staff-priority (+ 250 (* 10 idx)))
       (ly:spanner-set-bound! grob LEFT column)
       grob)))
 
@@ -531,8 +532,8 @@ psg-define-copedent =
       ;; ------- process-music -------
       ((process-music engraver)   
        (when (and (null? alignment-grobs) (not (null? (psg-copedent-id-list copedent))))
-         (for-each (lambda (id) 
-          (set! alignment-grobs (psg-add-id alignment-grobs id (psg-make-alignment-grob context engraver)))) (psg-copedent-id-list copedent))))
+         (for-each (lambda (id idx) 
+          (set! alignment-grobs (psg-add-id alignment-grobs id (psg-make-alignment-grob context engraver idx)))) (psg-copedent-id-list copedent) (iota (length (psg-copedent-id-list copedent))))))
       ;; ------- finalize -------
       ((finalize engraver)
         (let 
