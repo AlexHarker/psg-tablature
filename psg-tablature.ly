@@ -404,9 +404,9 @@ psg-define-copedent =
         (else #f)))
     (begin markuplist)))
 
-#(define (psg-make-bracket-grob context engraver id amount change)   
+#(define (psg-make-bracket-grob context engraver id amount change event)   
   (let 
-    ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracket '()))
+    ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracket event))
      (column (ly:context-property context 'currentMusicalColumn)))
     (begin
       (ly:spanner-set-bound! grob LEFT column)
@@ -452,16 +452,16 @@ psg-define-copedent =
                 (if (not (psg-id-find active id))
                   (begin ;pedal/lever on
                     (set! active (psg-add-id active id amount))
-                    (set! changes (psg-add-id changes id (list 1 amount))))
+                    (set! changes (psg-add-id changes id (list 1 amount event))))
                   (if (member (list id amount) active)
                     (ly:warning "Pedal or lever ~a re-engaged at the same amount without releasing/changing it" id)
                     (begin ;pedal/lever changed
                       (set! active (psg-add-id (psg-remove-id active id) id amount))
-                      (set! changes (psg-add-id changes id (list 2 amount))))))
+                      (set! changes (psg-add-id changes id (list 2 amount event))))))
                 (if (psg-id-find active id)
                   (begin ;pedal/lever off
                     (set! active (psg-remove-id active id))
-                    (set! changes (psg-add-id changes id (list 0 amount))))
+                    (set! changes (psg-add-id changes id (list 0 amount event))))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
               (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
       ;; ------- acknowledgers -------
@@ -485,11 +485,12 @@ psg-define-copedent =
           (let 
             ((id (car id-grob))
              (type (caadr id-grob))
-             (amount (cadadr id-grob)))
+             (amount (cadadr id-grob))
+             (event (car (cddadr id-grob))))
             (case type
               ((0) (set! grobs (psg-end-bracket-grob context grobs id #f)))
-              ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #f))))
-              ((2) (set! grobs (psg-end-bracket-grob context grobs id #t)) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #t))))))))))
+              ((1) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #f event))))
+              ((2) (set! grobs (psg-end-bracket-grob context grobs id #t )) (set! grobs (psg-add-id grobs id (psg-make-bracket-grob context engraver id amount #t event))))))))))
       ;; ------- finalize -------
       ((finalize engraver)
        (set! grobs (psg-loop-and-clear grobs (lambda (id-grob)                             
