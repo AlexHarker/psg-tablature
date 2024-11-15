@@ -278,6 +278,73 @@ psg-define-copedent =
        }
       #}))))
 
+%% Grobs and Interfaces
+
+#(define (add-grob-definition grob-entry)
+   (set! all-grob-descriptions
+         (cons ((@@ (lily) completize-grob-entry) grob-entry) all-grob-descriptions)))
+
+#(add-grob-definition `(PSGPedalOrLeverBracket
+  . ((direction . ,DOWN)
+     (edge-height . (0 . 0.8))
+     (font-series . bold)
+     (font-shape . upright)
+     (minimum-length . 0.3)
+     (outside-staff-priority . 400)
+     (padding . 0.5)
+     (shorten-pair . (-0.8 . -0.6))
+     (staff-padding . 2.0)
+     (stencil . ,ly:ottava-bracket::print)
+     (style . line)
+     (vertical-skylines . ,grob::unpure-vertical-skylines-from-stencil)
+     (Y-offset . ,side-position-interface::y-aligned-side)
+     (meta . ((class . Spanner)
+              (interfaces . (font-interface
+                             horizontal-bracket-interface
+                             line-interface
+                             outside-staff-interface
+                             psg-pedal-or-lever-interface
+                             side-position-interface
+                             text-interface))
+              (description . "A pedal steel pedal or level bracket."))))))
+
+#(add-grob-definition `(PSGPedalOrLeverBracketLineSpanner
+  . ((axes . (,Y))
+     (cross-staff . ,ly:side-position-interface::calc-cross-staff)
+     (direction . ,DOWN)
+     (minimum-space . 1.2)
+     (outside-staff-priority . 250)
+     (padding . 0.6)
+     (side-axis . ,Y)
+     (slur-padding . 0.3)
+     (staff-padding . 0.1)
+     (vertical-skylines
+      . ,grob::always-vertical-skylines-from-element-stencils)
+     (X-extent . ,ly:axis-group-interface::width)
+     (Y-extent . ,axis-group-interface::height)
+     (Y-offset . ,side-position-interface::y-aligned-side)
+     (meta . ((class . Spanner)
+              (object-callbacks
+               . ((pure-Y-common . ,ly:axis-group-interface::calc-pure-y-common)
+                  (pure-relevant-grobs . ,ly:axis-group-interface::calc-pure-relevant-grobs)))
+              (interfaces . (axis-group-interface
+                             psg-pedal-or-lever-interface
+                             psg-pedal-or-lever-line-spanner-interface
+                             outside-staff-interface
+                             side-position-interface))
+              (description . "An auxiliary grob providing a vertical baseline to align pedal or lever brackets."))))))
+
+
+#(ly:add-interface
+  'psg-pedal-or-lever-interface
+  "A pedal steel guitar lever or bracket."
+  '())
+
+#(ly:add-interface
+  'psg-pedal-or-lever-line-spanner-interface
+  "Pedal steel guitar lever or bracket line spanner."
+  '())
+
 %% Engraver
 
 #(define (psg-valid-pedal-or-lever copedent id amount)
@@ -338,15 +405,12 @@ psg-define-copedent =
 
 #(define (psg-make-bracket-grob context engraver id amount change)   
   (let 
-    ((grob (ly:engraver-make-grob engraver 'OttavaBracket '()))
+    ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracket '()))
      (column (ly:context-property context 'currentMusicalColumn)))
     (begin
       (ly:spanner-set-bound! grob LEFT column)
       (ly:grob-set-property! grob 'psgID id)
       (ly:grob-set-property! grob 'psgAmount amount)
-      (ly:grob-set-property! grob 'direction DOWN)
-      (ly:grob-set-property! grob 'style 'line)
-      (ly:grob-set-property! grob 'font-shape 'upright)
       (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount change)))))))
       grob)))
 
@@ -434,7 +498,7 @@ psg-define-copedent =
 
 #(define (psg-make-alignment-grob context engraver)   
   (let 
-    ((grob (ly:engraver-make-grob engraver 'DynamicLineSpanner '()))
+    ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracketLineSpanner '()))
      (column (ly:context-property context 'currentCommandColumn)))
     (begin 
       (ly:spanner-set-bound! grob LEFT column)
@@ -453,7 +517,7 @@ psg-define-copedent =
     (make-engraver
       ;; ------- acknowledgers -------
       (acknowledgers
-        ((ottava-bracket-interface engraver grob source-engraver)
+        ((psg-pedal-or-lever-interface engraver grob source-engraver)
           (set! new-grobs (cons grob new-grobs))))
       ;; ------- process acknowledged -------
       ((process-acknowledged engraver)
@@ -582,31 +646,36 @@ psg-define-copedent =
 
 \layout
 {
-    \context
-    {
-      \TabStaff
-      \name PedalSteelTab
-      \alias TabStaff
-      \consists #psg-tab-engraver
-      \consists #psg-tab-alignment-engraver
-      
-      psgTabInSpace = ##t
-      psgClefStyle = #'both
-    }
-    
-    \inherit-acceptability PedalSteelTab TabStaff
-    
-    \context
-    {
-      \Staff
-      \omit StringNumber
-      \name PedalSteelStaff
-      \alias Staff
+  \context
+  {
+    \Global
+    \grobdescriptions #all-grob-descriptions
+  }
 
-      \omit StringNumber
-    }
+  \context
+  {
+    \TabStaff
+    \name PedalSteelTab
+    \alias TabStaff
+    \consists #psg-tab-engraver
+    \consists #psg-tab-alignment-engraver
+      
+    psgTabInSpace = ##t
+    psgClefStyle = #'both
+  }
     
-    \inherit-acceptability PedalSteelStaff Staff
-    \inherit-acceptability Staff PedalSteelStaff
+  \inherit-acceptability PedalSteelTab TabStaff
     
+  \context
+  {
+    \Staff
+    \omit StringNumber
+    \name PedalSteelStaff
+    \alias Staff
+
+    \omit StringNumber
+  }
+    
+  \inherit-acceptability PedalSteelStaff Staff
+  \inherit-acceptability Staff PedalSteelStaff
 }
