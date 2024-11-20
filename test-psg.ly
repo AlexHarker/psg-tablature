@@ -49,9 +49,11 @@ myNotes = \transpose c c'
     \context
     {
       \PedalSteelTab 
-      psgCopedent = \copedentE	% set the copedent here
-      psgTabInSpace = ##t		% draw the bar positions between lines (true) or on the lines (false)
-      psgClefStyle = #'both		% can also use 'numbers or 'names
+      psg-copedent = \copedentE		% set the copedent here
+      psg-tab-in-space = ##t			% draw the bar positions between lines (true) or on the lines (false)
+      psg-clef-style = #'both			% can also use 'numbers or 'names
+      
+      \override PSGPedalOrLeverBracket.psg-represent-fraction= ##t	         % sets whether the depth of brackets is different for fractional pedals
     }
   }
   

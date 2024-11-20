@@ -51,7 +51,7 @@ make-psg-pedal-event =
     (begin
       (ly:warning "Pedal or lever event with zero or negative amount - setting to 1")
       (set! amount 1)))
-  (make-music 'PsgPedalOrLeverEvent 'span-direction span-dir 'psgID (psg-id-to-string id) 'amount amount))
+  (make-music 'PsgPedalOrLeverEvent 'span-direction span-dir 'psg-id (psg-id-to-string id) 'amount amount))
 
 psgFractional =
 #(define-music-function
@@ -113,13 +113,13 @@ psgOff =
 
 %% Context properties
 
-#(set-object-property! 'psgCopedent 'translation-type? psg-copedent?)
-#(set-object-property! 'psgTabInSpace 'translation-type? boolean?)
-#(set-object-property! 'psgClefStyle 'translation-type? symbol?)
-#(set-object-property! 'psgID 'backend-type? string?)
-#(set-object-property! 'psgAmount 'backend-type? number?)
-#(set-object-property! 'psgContinue 'backend-type? boolean?)
-#(set-object-property! 'psgRepresetFraction 'backend-type? boolean?)
+#(set-object-property! 'psg-copedent 'translation-type? psg-copedent?)
+#(set-object-property! 'psg-tab-in-space 'translation-type? boolean?)
+#(set-object-property! 'psg-clef-style 'translation-type? symbol?)
+#(set-object-property! 'psg-id 'backend-type? string?)
+#(set-object-property! 'psg-amount 'backend-type? number?)
+#(set-object-property! 'psg-continue 'backend-type? boolean?)
+#(set-object-property! 'psg-represent-fraction 'backend-type? boolean?)
 
 %% Copedent definition functions
 
@@ -289,10 +289,10 @@ psg-define-copedent =
 
 #(define (make-psg-pedal-or-lever-bracket grob bracket-offset width thickness)
     (let*
-      ((amount (ly:grob-property grob 'psgAmount))
+      ((amount (ly:grob-property grob 'psg-amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
-       (start-height (if (ly:grob-property grob 'psgRepresentFraction) (- edge-height (* amount edge-height)) 0)))
-      (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psgContinue #f))
+       (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0)))
+      (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
         (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height) thickness 1 1 #f)
         (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height 'lineto width edge-height) thickness 1 1 #f))))
 
@@ -337,7 +337,7 @@ psg-define-copedent =
      (thickness . 1)
      (vertical-skylines . ,grob::unpure-vertical-skylines-from-stencil)
      (Y-offset . ,side-position-interface::y-aligned-side)
-     (psgRepresentFraction . #t)
+     (psg-represent-fraction . #t)
      (meta . ((class . Spanner)
               (interfaces . (font-interface
                              horizontal-bracket-interface
@@ -449,8 +449,8 @@ psg-define-copedent =
      (column (ly:context-property context 'currentMusicalColumn)))
     (begin
       (ly:spanner-set-bound! grob LEFT column)
-      (ly:grob-set-property! grob 'psgID id)
-      (ly:grob-set-property! grob 'psgAmount amount)
+      (ly:grob-set-property! grob 'psg-id id)
+      (ly:grob-set-property! grob 'psg-amount amount)
       (ly:grob-set-property! grob 'text (markup (#:fontsize -4 (#:sans ( #:bold (make-concat-markup (psg-make-change-markuplist id amount change)))))))
       grob)))
 
@@ -460,14 +460,14 @@ psg-define-copedent =
      (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
     (if change
-        (ly:grob-set-property! grob 'psgContinue #t))
+        (ly:grob-set-property! grob 'psg-continue #t))
     (psg-remove-id grobs id)))
 
 #(define (psg-tab-engraver context)
   (let
-    ((copedent (ly:context-property context 'psgCopedent))
-     (in-space (ly:context-property context 'psgTabInSpace))
-     (clef-style (if (equal? (ly:context-property context 'psgClefStyle) 'both) 0 (if (equal? (ly:context-property context 'psgClefStyle) 'numbers) 1 2)))
+    ((copedent (ly:context-property context 'psg-copedent))
+     (in-space (ly:context-property context 'psg-tab-in-space))
+     (clef-style (if (equal? (ly:context-property context 'psg-clef-style) 'both) 0 (if (equal? (ly:context-property context 'psg-clef-style) 'numbers) 1 2)))
      (active '())
      (changes '())
      (grobs '())
@@ -483,7 +483,7 @@ psg-define-copedent =
       (listeners
         ((psg-pedal-or-lever-event engraver event)
           (define dir (ly:event-property event 'span-direction))
-          (define id (ly:event-property event 'psgID))
+          (define id (ly:event-property event 'psg-id))
           (define amount (ly:event-property event 'amount))
           (if (psg-valid-pedal-or-lever copedent id amount)
             (begin
@@ -553,7 +553,7 @@ psg-define-copedent =
 
 #(define (psg-tab-alignment-engraver context)
   (let
-    ((copedent (ly:context-property context 'psgCopedent))
+    ((copedent (ly:context-property context 'psg-copedent))
      (new-grobs '())
      (alignment-grobs '()))
     (make-engraver
@@ -565,7 +565,7 @@ psg-define-copedent =
       ((process-acknowledged engraver)
         (set! new-grobs (psg-loop-and-clear new-grobs (lambda (grob)
           (let
-            ((id (ly:grob-property grob 'psgID)))
+            ((id (ly:grob-property grob 'psg-id)))
             (ly:grob-set-property! grob 'Y-offset -2)
             (ly:axis-group-interface::add-element (psg-id-find alignment-grobs id) grob))))))
       ;; ------- process-music -------
@@ -702,8 +702,8 @@ psg-define-copedent =
     \consists #psg-tab-engraver
     \consists #psg-tab-alignment-engraver
       
-    psgTabInSpace = ##t
-    psgClefStyle = #'both
+    psg-tab-in-space = ##t
+    psg-clef-style = #'both
   }
     
   \inherit-acceptability PedalSteelTab TabStaff
