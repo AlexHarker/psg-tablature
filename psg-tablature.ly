@@ -118,6 +118,8 @@ psgOff =
 #(set-object-property! 'psgClefStyle 'translation-type? symbol?)
 #(set-object-property! 'psgID 'backend-type? string?)
 #(set-object-property! 'psgAmount 'backend-type? number?)
+#(set-object-property! 'psgContinue 'backend-type? boolean?)
+#(set-object-property! 'psgRepresetFraction 'backend-type? boolean?)
 
 %% Copedent definition functions
 
@@ -278,6 +280,42 @@ psg-define-copedent =
        }
       #}))))
 
+%% Pedal / lever stencil
+
+#(define (make-psg-pedal-or-lever-text grob thickness)
+  (let 
+    ((stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text)))))
+    (ly:stencil-translate stencil (cons 0 (- 0 (/ thickness 2))))))
+
+#(define (make-psg-pedal-or-lever-bracket grob bracket-offset width thickness)
+    (let*
+      ((amount (ly:grob-property grob 'psgAmount))
+       (edge-height (cdr (ly:grob-property grob 'edge-height)))
+       (start-height (if (ly:grob-property grob 'psgRepresentFraction) (- edge-height (* amount edge-height)) 0)))
+      (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psgContinue #f))
+        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height) thickness 1 1 #f)
+        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height 'lineto width edge-height) thickness 1 1 #f))))
+
+#(define (psg-pedal-or-lever-bracket-stencil)
+  (lambda (grob)
+    (let*
+      ((thickness 0.1)
+       (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
+       (coordL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
+       (coordR (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X))
+       (text-stencil (make-psg-pedal-or-lever-text grob thickness))
+       (bracket-offset (+ 0.2 (cdr (ly:stencil-extent text-stencil X)))))
+      (begin 
+        (if (not-last-broken-spanner? grob)
+          (set! coordR (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common))))
+        (if (unbroken-or-first-broken-spanner? grob)
+          (begin
+            (if (= -inf.0 bracket-offset) (set! bracket-offset 0))
+            (ly:stencil-add text-stencil (make-psg-pedal-or-lever-bracket grob bracket-offset (- coordR coordL) thickness)))
+          (begin 
+            (set! bracket-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))
+            (make-psg-pedal-or-lever-bracket grob bracket-offset (- coordR coordL) thickness)))))))
+
 %% Grobs and Interfaces
 
 #(define (add-grob-definition grob-entry)
@@ -286,7 +324,7 @@ psg-define-copedent =
 
 #(add-grob-definition `(PSGPedalOrLeverBracket
   . ((direction . ,DOWN)
-     (edge-height . (0 . 0.8))
+     (edge-height . (0 . 0.9))
      (font-series . bold)
      (font-shape . upright)
      (minimum-length . 0.3)
@@ -294,11 +332,12 @@ psg-define-copedent =
      (padding . 0.5)
      (shorten-pair . (0 . 0))
      (staff-padding . 2.0)
-     (stencil . ,ly:ottava-bracket::print)
+     (stencil . ,(psg-pedal-or-lever-bracket-stencil))
      (style . line)
      (thickness . 1)
      (vertical-skylines . ,grob::unpure-vertical-skylines-from-stencil)
      (Y-offset . ,side-position-interface::y-aligned-side)
+     (psgRepresentFraction . #t)
      (meta . ((class . Spanner)
               (interfaces . (font-interface
                              horizontal-bracket-interface
@@ -421,7 +460,7 @@ psg-define-copedent =
      (column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)
     (if change
-        (ly:grob-set-property! grob 'edge-height '(0 . 0)))
+        (ly:grob-set-property! grob 'psgContinue #t))
     (psg-remove-id grobs id)))
 
 #(define (psg-tab-engraver context)
