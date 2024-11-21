@@ -131,6 +131,7 @@ psgSlow =
 #(set-object-property! 'psg-id 'backend-type? string?)
 #(set-object-property! 'psg-amount 'backend-type? number?)
 #(set-object-property! 'psg-continue 'backend-type? boolean?)
+#(set-object-property! 'psg-slow 'backend-type? list?)
 #(set-object-property! 'psg-represent-fraction 'backend-type? boolean?)
 
 %% Copedent definition functions
@@ -294,41 +295,52 @@ psg-define-copedent =
 
 %% Pedal / lever stencil
 
-#(define (make-psg-pedal-or-lever-text grob thickness)
+#(define (make-psg-pedal-or-lever-text grob thickness in-parentheses)
   (let 
     ((stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text)))))
+    (if in-parentheses) (set! stencil (parenthesize-stencil stencil 0.1 0.4 0.4 0.1)))
     (ly:stencil-translate stencil (cons 0 (- 0 (/ thickness 2))))))
 
-#(define (make-psg-pedal-or-lever-bracket grob bracket-offset width thickness)
+#(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
     (let*
-      ((amount (ly:grob-property grob 'psg-amount))
+      ((common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
+       (slow (ly:grob-property grob 'psg-slow #f))
+       (slow-column (if (and slow (cadr slow)) (car slow) #f))
+       (amount (ly:grob-property grob 'psg-amount))
+       (target-amount (if (and slow (cadr slow)) (cadr slow) amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
-       (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0)))
-      (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
-        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height) thickness 1 1 #f)
-        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto width start-height 'lineto width edge-height) thickness 1 1 #f))))
+       (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0))
+       (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height) 0)))
+       (bracket-offset text-offset)
+       (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
+       (relativeM (if slow-column (- (ly:grob-relative-coordinate slow-column common X) absoluteL) 0))
+       (relativeR (- (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X) absoluteL)))
+       ; find the left edge of the bracket
+      (if (not (unbroken-or-first-broken-spanner? grob)) 
+        (set! bracket-offset (+ text-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))))
+      ; find the right edge of the bracket
+      (if (not-last-broken-spanner? grob)
+        (set! relativeR (- (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common)) absoluteL))
+        (if (ly:grob-property grob 'psg-continue #f)
+          (set! relativeR (- relativeR text-padding))))
+      (if (and slow-column (> relativeM bracket-offset) (< relativeM relativeR))
+       (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeM start-height 'lineto relativeR end-height) thickness 1 1 #f)
+       (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
+        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR end-height) thickness 1 1 #f)
+        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR start-height 'lineto relativeR edge-height) thickness 1 1 #f)))))
 
 #(define (psg-pedal-or-lever-bracket-stencil)
   (lambda (grob)
     (let*
       ((thickness 0.1)
        (text-padding 0.2)
-       (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
-       (coordL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
-       (coordR (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X))
-       (text-stencil (make-psg-pedal-or-lever-text grob thickness))
-       (bracket-offset (+ text-padding (cdr (ly:stencil-extent text-stencil X)))))
-      (begin 
-        (if (ly:grob-property grob 'psg-continue #f)
-          (set! coordR (- coordR text-padding)))
-        (if (not-last-broken-spanner? grob)
-          (set! coordR (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common))))
-        (if (unbroken-or-first-broken-spanner? grob)
-          (begin
-            (ly:stencil-add text-stencil (make-psg-pedal-or-lever-bracket grob bracket-offset (- coordR coordL) thickness)))
-          (begin 
-            (set! bracket-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))
-            (make-psg-pedal-or-lever-bracket grob bracket-offset (- coordR coordL) thickness)))))))
+       (restate-when-broken #f)
+       (first-spanner (unbroken-or-first-broken-spanner? grob))
+       (render-text (or first-spanner restate-when-broken))
+       (text-stencil (if render-text (make-psg-pedal-or-lever-text grob thickness (not first-spanner)) #f))
+       (text-offset (if render-text (+ text-padding (cdr (ly:stencil-extent text-stencil X))) 0))
+       (bracket (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)))
+      (if render-text (ly:stencil-add text-stencil bracket) bracket))))
 
 %% Grobs and Interfaces
 
@@ -439,7 +451,7 @@ psg-define-copedent =
         (set! amount (- amount 1))))
     (if (or change (not (integer? amount)))
       (cond 
-        ((= amount 1) (append! markuplist (list (markup #:simple "full"))))
+        ((= amount 1) (append! markuplist (list (markup #:simple "(") (markup #:simple id) (markup #:simple ")"))))
         ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
         ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
         ((= amount (/ 2 3)) (append! markuplist (list (markup #:simple "⅔"))))
@@ -472,15 +484,23 @@ psg-define-copedent =
       (ly:grob-set-property! grob 'text (make-psg-change-markup id amount change))
       grob)))
 
-#(define (end-psg-bracket-grob context grobs id change)
-  (let 
-    ((grob (find-psg-id grobs id)))
+#(define (end-psg-bracket-grob context grobs id change amount)
+  (let* 
+    ((grob (find-psg-id grobs id))
+     (slow (ly:grob-property grob 'psg-slow #f)))
     (if change
       (begin 
         (ly:spanner-set-bound! grob RIGHT (ly:context-property context 'currentMusicalColumn))
-        (ly:grob-set-property! grob 'psg-continue #t))
-        (ly:spanner-set-bound! grob RIGHT (ly:context-property context 'currentCommandColumn)))
+        (ly:grob-set-property! grob 'psg-continue #t)
+        (if slow (ly:grob-set-property! grob 'psg-slow (list (car slow) amount (caddr slow)))))
+      (ly:spanner-set-bound! grob RIGHT (ly:context-property context 'currentCommandColumn)))
     (remove-psg-id grobs id)))
+
+#(define (set-psg-bracket-slow context id grobs event)   
+  (let 
+    ((column (ly:context-property context 'currentMusicalColumn))
+     (grob (find-psg-id grobs id)))
+    (ly:grob-set-property! grob 'psg-slow (list column #f event))))
 
 #(define (psg-tab-engraver context)
   (let
@@ -489,6 +509,7 @@ psg-define-copedent =
      (clef-style (if (equal? (ly:context-property context 'psg-clef-style) 'both) 0 (if (equal? (ly:context-property context 'psg-clef-style) 'numbers) 1 2)))
      (active '())
      (changes '())
+     (slow '())
      (grobs '())
      (clefs '())
      (note-heads '()))
@@ -521,7 +542,15 @@ psg-define-copedent =
                     (set! active (remove-psg-id active id))
                     (set! changes (add-psg-id changes id (list 0 amount event))))
                   (ly:warning "Pedal or lever ~a released without engaging it" id)))
-              (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space))))))
+              (ly:context-set-property! context 'stringTunings (psg-evaluate-copedent copedent active in-space)))))
+        ((psg-slow-pedal-or-lever-event engraver event)
+          (define id (ly:event-property event 'psg-id))
+          (if (not (find-psg-id active id))
+            (begin ;pedal/lever on slow
+              (set! active (add-psg-id active id 0))
+              (set! changes (add-psg-id changes id (list 1 0 event)))))
+          (if (psg-valid-pedal-or-lever copedent id 1)
+            (set! slow (add-psg-id slow id event)))))
       ;; ------- acknowledgers -------
       (acknowledgers
         ((clef-interface engraver grob source-engraver)
@@ -546,15 +575,20 @@ psg-define-copedent =
              (amount (cadadr id-grob))
              (event (car (cddadr id-grob))))
             (case type
-              ((0) (set! grobs (end-psg-bracket-grob context grobs id #f)))
+              ((0) (set! grobs (end-psg-bracket-grob context grobs id #f amount)))
               ((1) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #f event))))
-              ((2) (set! grobs (end-psg-bracket-grob context grobs id #t)) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #t event))))))))))
+              ((2) (set! grobs (end-psg-bracket-grob context grobs id #t amount)) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #t event)))))))))
+        (set! slow (psg-loop-and-clear slow (lambda (id-grob)                             
+          (let 
+            ((id (car id-grob))
+             (event (cadr id-grob)))
+            (set-psg-bracket-slow context id grobs event))))))
       ;; ------- finalize -------
       ((finalize engraver)
        (set! grobs (psg-loop-and-clear grobs (lambda (id-grob)                             
           (let 
             ((id (car id-grob)))
-            (set! grobs (end-psg-bracket-grob context grobs id #f))))))))))
+            (set! grobs (end-psg-bracket-grob context grobs id #f 0))))))))))
 
 #(define (make-psg-alignment-grob context engraver idx)   
   (let 
