@@ -296,10 +296,12 @@ psg-define-copedent =
 %% Pedal / lever stencil
 
 #(define (make-psg-pedal-or-lever-text grob thickness in-parentheses)
-  (let 
-    ((stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text)))))
-    (if in-parentheses) (set! stencil (parenthesize-stencil stencil 0.1 0.4 0.4 0.1)))
-    (ly:stencil-translate stencil (cons 0 (- 0 (/ thickness 2))))))
+  (let* 
+    ((stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text))))
+     (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
+     (offsetX (if (not (unbroken-or-first-broken-spanner? grob)) (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)) 0)))
+    (if in-parentheses (set! stencil (parenthesize-stencil stencil 0.1 0.4 0.4 0.1)))
+    (ly:stencil-translate stencil (cons offsetX (- 0 (/ thickness 2))))))
 
 #(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
     (let*
@@ -338,7 +340,8 @@ psg-define-copedent =
        (first-spanner (unbroken-or-first-broken-spanner? grob))
        (render-text (or first-spanner restate-when-broken))
        (text-stencil (if render-text (make-psg-pedal-or-lever-text grob thickness (not first-spanner)) #f))
-       (text-offset (if render-text (+ text-padding (cdr (ly:stencil-extent text-stencil X))) 0))
+       (text-extent (if render-text (ly:stencil-extent text-stencil X)))
+       (text-offset (if render-text (+ text-padding (- (cdr text-extent) (car text-extent))) 0))
        (bracket (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)))
       (if render-text (ly:stencil-add text-stencil bracket) bracket))))
 
