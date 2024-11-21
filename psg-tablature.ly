@@ -330,6 +330,7 @@ psg-define-copedent =
      (minimum-length . 0.3)
      (outside-staff-priority . 400)
      (padding . 0.5)
+     (psg-represent-fraction . #t)
      (shorten-pair . (0 . 0))
      (staff-padding . 2.0)
      (stencil . ,(psg-pedal-or-lever-bracket-stencil))
@@ -337,7 +338,6 @@ psg-define-copedent =
      (thickness . 1)
      (vertical-skylines . ,grob::unpure-vertical-skylines-from-stencil)
      (Y-offset . ,side-position-interface::y-aligned-side)
-     (psg-represent-fraction . #t)
      (meta . ((class . Spanner)
               (interfaces . (font-interface
                              horizontal-bracket-interface
