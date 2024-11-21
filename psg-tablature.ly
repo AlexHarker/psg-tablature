@@ -311,7 +311,6 @@ psg-define-copedent =
           (set! coordR (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common))))
         (if (unbroken-or-first-broken-spanner? grob)
           (begin
-            (if (= -inf.0 bracket-offset) (set! bracket-offset 0))
             (ly:stencil-add text-stencil (make-psg-pedal-or-lever-bracket grob bracket-offset (- coordR coordL) thickness)))
           (begin 
             (set! bracket-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))
@@ -424,8 +423,9 @@ psg-define-copedent =
       (begin
         (append! markuplist (list (markup #:simple "+")))
         (set! amount (- amount 1))))
-    (if (not (integer? amount))
+    (if (or change (not (integer? amount)))
       (cond 
+        ((= amount 1) (append! markuplist (list (markup #:simple "full"))))
         ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
         ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
         ((= amount (/ 2 3)) (append! markuplist (list (markup #:simple "⅔"))))
