@@ -300,11 +300,12 @@ psg-define-copedent =
   (lambda (grob)
     (let*
       ((thickness 0.1)
+       (text-padding 0.2)
        (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
        (coordL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
        (coordR (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X))
        (text-stencil (make-psg-pedal-or-lever-text grob thickness))
-       (bracket-offset (+ 0.2 (cdr (ly:stencil-extent text-stencil X)))))
+       (bracket-offset (+ text-padding (cdr (ly:stencil-extent text-stencil X)))))
       (begin 
         (if (not-last-broken-spanner? grob)
           (set! coordR (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common))))
