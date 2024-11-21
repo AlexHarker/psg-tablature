@@ -15,11 +15,17 @@
       alist<?)))
 
 #(define-event-class 'psg-pedal-or-lever-event 'span-event)
+#(define-event-class 'psg-slow-pedal-or-lever-event 'span-event)
 
 #(define-event!
   'PsgPedalOrLeverEvent
   '((description . "Engage or release PSG pedal or knee level.")
     (types . (post-event event pedal-event psg-pedal-or-lever-event))))
+
+#(define-event!
+  'PsgSlowPedalOrLeverEvent
+  '((description . "Set the engagement or release of PSG pedal or knee lever to slow.")
+    (types . (post-event event pedal-event psg-slow-pedal-or-lever-event))))
 
 %% ID helpers
 
@@ -39,7 +45,7 @@
      
 %% Event creation
 
-make-psg-pedal-event =
+make-psg-pedal-or-lever-event =
 #(define-music-function
   (id span-dir amount)
   (psg-id-type? number? rational?)
@@ -57,26 +63,32 @@ psgFractional =
 #(define-music-function
   (id num denom)
   (psg-id-type? integer? integer?)
-  (make-psg-pedal-event id START (/ num denom)))
+  (make-psg-pedal-or-lever-event id START (/ num denom)))
 
 psgExt =
 #(define-music-function
   (id)
   (psg-id-type?)
-  (make-psg-pedal-event id START 2))
+  (make-psg-pedal-or-lever-event id START 2))
 
 psgOn =
 #(define-music-function
   (id)
   (psg-id-type?)
-  (make-psg-pedal-event id START 1))
+  (make-psg-pedal-or-lever-event id START 1))
 
 psgOff =
 #(define-music-function
   (id)
   (psg-id-type?)
-  (make-psg-pedal-event id STOP 1))
+  (make-psg-pedal-or-lever-event id STOP 1))
 
+psgSlow =
+#(define-music-function
+  (id)
+  (psg-id-type?)
+  (make-music 'PsgSlowPedalOrLeverEvent 'psg-id (psg-id-to-string id)))
+  
 %% Copedent checks & predicate - here we define correct or bad input for defining copedents
 
 #(define (psg-check-strings strings)
