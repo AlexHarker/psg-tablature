@@ -332,7 +332,7 @@ psg-define-copedent =
        (target-amount (if (and slow-rank (not slow-after)) (cadr slow) amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
        (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0))
-       (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height) 0)))
+       (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height)) 0))
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
        (relativeM (if split-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) #f))
