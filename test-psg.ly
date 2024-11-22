@@ -48,12 +48,16 @@ myNotes = \transpose c c'
 
     \context
     {
-      \PedalSteelTab 
-      psg-copedent = \copedentE		% set the copedent here
-      psg-tab-in-space = ##t			% draw the bar positions between lines (true) or on the lines (false)
-      psg-clef-style = #'both			% can also use 'numbers or 'names
+      % TO DO - figure out if any of these would be better on (or not on) grobs...
       
-      \override PSGPedalOrLeverBracket.psg-represent-fraction= ##t	         % sets whether the depth of brackets is different for fractional pedals
+      \PedalSteelTab 
+      psg-copedent = \copedentE				% set the copedent here
+      psg-tab-in-space = ##t					% draw the bar positions between lines (true) or on the lines (false)
+      psg-clef-style = #'both					% can also use 'numbers or 'names
+      psg-restate-before-slow-change = ##t		% can also use 'numbers or 'names
+      
+      \override PSGPedalOrLeverBracket.psg-represent-fraction= ##t	         % sets whether the depth of brackets is different for fractional pedals 
+       \override PSGPedalOrLeverBracket.psg-restate-when-broken=##t	% sets whether the pedal/lever indication is restated when the system is broken
     }
   }
   

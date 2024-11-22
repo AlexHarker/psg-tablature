@@ -135,7 +135,9 @@ psgSlow =
 #(set-object-property! 'psg-continue 'backend-type? boolean?)
 #(set-object-property! 'psg-slow 'backend-type? list?)
 #(set-object-property! 'psg-restate 'backend-type? boolean?)
+
 #(set-object-property! 'psg-represent-fraction 'backend-type? boolean?)
+#(set-object-property! 'psg-restate-when-broken 'backend-type? boolean?)
 
 %% Copedent definition functions
 
@@ -370,7 +372,7 @@ psg-define-copedent =
     (let*
       ((thickness 0.1)
        (text-padding 0.2)
-       (restate-when-broken #f)
+       (restate-when-broken (ly:grob-property grob 'psg-restate-when-broken #f))
        (first-spanner (unbroken-or-first-broken-spanner? grob))
        (render-text (or first-spanner restate-when-broken))
        (text-stencil (if render-text (make-psg-pedal-or-lever-text grob thickness (or (not first-spanner) (ly:grob-property grob 'psg-restate #f))) #f))
