@@ -297,10 +297,17 @@ psg-define-copedent =
 
 #(define (make-psg-pedal-or-lever-text grob thickness in-parentheses)
   (let* 
-    ((stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text))))
+    ((amount (ly:grob-property grob 'psg-amount))
+     (stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text))))
      (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
      (offsetX (if (not (unbroken-or-first-broken-spanner? grob)) (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)) 0)))
-    (if in-parentheses (set! stencil (parenthesize-stencil stencil 0.1 0.4 0.4 0.1)))
+    ; do parentheses if needed
+    (if (or (= amount 0) in-parentheses) 
+      (begin 
+        (set! stencil (parenthesize-stencil stencil 0.05 0.2 0.6 0))
+        (set! stencil (ly:stencil-translate stencil (cons (- 0 (car (ly:stencil-extent stencil X))) 0)))
+      ))
+    ; translate and return
     (ly:stencil-translate stencil (cons offsetX (- 0 (/ thickness 2))))))
 
 #(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
@@ -478,7 +485,7 @@ psg-define-copedent =
         (set! amount (- amount 1))))
     (if (or change (not (integer? amount)))
       (cond 
-        ((= amount 1) (append! markuplist (list (markup #:simple "(") (markup #:simple id) (markup #:simple ")"))))
+        ((= amount 1) (append! markuplist (list (markup #:simple id))))
         ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
         ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
         ((= amount (/ 2 3)) (append! markuplist (list (markup #:simple "⅔"))))
