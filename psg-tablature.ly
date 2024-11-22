@@ -304,6 +304,10 @@ psg-define-copedent =
     (ly:stencil-translate stencil (cons offsetX (- 0 (/ thickness 2))))))
 
 #(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
+    (define (time-calculate a b c)
+      (ly:moment-main (ly:moment-div (ly:moment-sub a b) (ly:moment-sub c b))))
+    (define (interpolate a b c)
+      (+ (* a (- 1 c)) (* b c)))
     (let*
       ((common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
        (grob-ranks (ly:grob-spanned-column-rank-interval grob))
@@ -312,7 +316,11 @@ psg-define-copedent =
        (slow-rank (if slow-column (car (ly:grob-spanned-column-rank-interval slow-column)) #f))
        (slow-before (if slow-rank (<= slow-rank (car grob-ranks)) #f))
        (slow-after (if slow-rank (> slow-rank (cdr grob-ranks)) #f))
-       (slow-render (if slow-rank (and (not slow-before) (not slow-after)) #f))
+       (split-render (if slow-rank (and (not slow-before) (not slow-after)) #f))
+       (slow-start (if slow-column (grob::when slow-column) #f))
+       (slow-end (if slow-column (grob::when (ly:spanner-bound (ly:grob-original grob) RIGHT)) #f))
+       (this-start (if slow-column (grob::when  (ly:spanner-bound grob LEFT)) #f))
+       (this-end (if slow-column (grob::when  (ly:spanner-bound grob RIGHT)) #f))
        (amount (ly:grob-property grob 'psg-amount))
        (target-amount (if (and slow-rank (not slow-after)) (cadr slow) amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
@@ -320,8 +328,19 @@ psg-define-copedent =
        (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height) 0)))
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
-       (relativeM (if slow-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) 0))
+       (relativeM (if split-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) #f))
        (relativeR (- (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X) absoluteL)))
+      ; calculate the height of the brackets for broken slow changes
+      (if (and slow-column (ly:grob-property grob 'psg-represent-fraction)) 
+        (begin 
+          (if (ly:moment<? slow-start this-start) 
+            (let 
+              ((start-amount (interpolate amount target-amount (time-calculate this-start slow-start slow-end))))
+              (set! start-height (- edge-height (* start-amount edge-height)))))
+          (if (ly:moment<? this-end slow-end) 
+            (let 
+              ((end-amount (interpolate amount target-amount (time-calculate this-end slow-start slow-end))))
+              (set! end-height (- edge-height (* end-amount edge-height)))))))
       ; find the left edge of the bracket
       (if (not (unbroken-or-first-broken-spanner? grob)) 
         (set! bracket-offset (+ text-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))))
@@ -330,7 +349,7 @@ psg-define-copedent =
         (set! relativeR (- (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common)) absoluteL))
         (if (ly:grob-property grob 'psg-continue #f)
           (set! relativeR (- relativeR text-padding))))
-      (if slow-render 
+      (if split-render
        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeM start-height 'lineto relativeR end-height) thickness 1 1 #f)
        (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
         (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR end-height) thickness 1 1 #f)
