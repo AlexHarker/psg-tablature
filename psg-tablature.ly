@@ -478,12 +478,14 @@ psg-define-copedent =
         
 #(define (make-psg-change-markuplist id amount change)
   (let 
-    ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id)))))
+    ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id))))
+     (empty change))
     (if (> amount 1)
       (begin
         (append! markuplist (list (markup #:simple "+")))
-        (set! amount (- amount 1))))
-    (if (or change (not (integer? amount)))
+        (set! amount (- amount 1))
+        (set! empty #f)))
+    (if (or empty (not (integer? amount)))
       (cond 
         ((= amount 1) (append! markuplist (list (markup #:simple id))))
         ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
