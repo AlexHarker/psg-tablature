@@ -306,18 +306,23 @@ psg-define-copedent =
 #(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
     (let*
       ((common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
+       (grob-ranks (ly:grob-spanned-column-rank-interval grob))
        (slow (ly:grob-property grob 'psg-slow #f))
        (slow-column (if (and slow (cadr slow)) (car slow) #f))
+       (slow-rank (if slow-column (car (ly:grob-spanned-column-rank-interval slow-column)) #f))
+       (slow-before (if slow-rank (<= slow-rank (car grob-ranks)) #f))
+       (slow-after (if slow-rank (> slow-rank (cdr grob-ranks)) #f))
+       (slow-render (if slow-rank (and (not slow-before) (not slow-after)) #f))
        (amount (ly:grob-property grob 'psg-amount))
-       (target-amount (if (and slow (cadr slow)) (cadr slow) amount))
+       (target-amount (if (and slow-rank (not slow-after)) (cadr slow) amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
        (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0))
        (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height) 0)))
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
-       (relativeM (if slow-column (- (ly:grob-relative-coordinate slow-column common X) absoluteL) 0))
+       (relativeM (if slow-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) 0))
        (relativeR (- (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X) absoluteL)))
-       ; find the left edge of the bracket
+      ; find the left edge of the bracket
       (if (not (unbroken-or-first-broken-spanner? grob)) 
         (set! bracket-offset (+ text-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))))
       ; find the right edge of the bracket
@@ -325,7 +330,7 @@ psg-define-copedent =
         (set! relativeR (- (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common)) absoluteL))
         (if (ly:grob-property grob 'psg-continue #f)
           (set! relativeR (- relativeR text-padding))))
-      (if (and slow-column (> relativeM bracket-offset) (< relativeM relativeR))
+      (if slow-render 
        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeM start-height 'lineto relativeR end-height) thickness 1 1 #f)
        (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
         (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR end-height) thickness 1 1 #f)
