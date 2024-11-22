@@ -128,10 +128,13 @@ psgSlow =
 #(set-object-property! 'psg-copedent 'translation-type? psg-copedent?)
 #(set-object-property! 'psg-tab-in-space 'translation-type? boolean?)
 #(set-object-property! 'psg-clef-style 'translation-type? symbol?)
+#(set-object-property! 'psg-restate-before-slow-change 'translation-type? boolean?)
+
 #(set-object-property! 'psg-id 'backend-type? string?)
 #(set-object-property! 'psg-amount 'backend-type? number?)
 #(set-object-property! 'psg-continue 'backend-type? boolean?)
 #(set-object-property! 'psg-slow 'backend-type? list?)
+#(set-object-property! 'psg-restate 'backend-type? boolean?)
 #(set-object-property! 'psg-represent-fraction 'backend-type? boolean?)
 
 %% Copedent definition functions
@@ -370,7 +373,7 @@ psg-define-copedent =
        (restate-when-broken #f)
        (first-spanner (unbroken-or-first-broken-spanner? grob))
        (render-text (or first-spanner restate-when-broken))
-       (text-stencil (if render-text (make-psg-pedal-or-lever-text grob thickness (not first-spanner)) #f))
+       (text-stencil (if render-text (make-psg-pedal-or-lever-text grob thickness (or (not first-spanner) (ly:grob-property grob 'psg-restate #f))) #f))
        (text-extent (if render-text (ly:stencil-extent text-stencil X)))
        (text-offset (if render-text (+ text-padding (- (cdr text-extent) (car text-extent))) 0))
        (bracket (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)))
@@ -509,7 +512,7 @@ psg-define-copedent =
 #(define (make-psg-change-markup id amount change)
  (markup (#:fontsize -4 (#:sans (#:bold (make-concat-markup (make-psg-change-markuplist id amount change)))))))
 
-#(define (make-psg-bracket-grob context engraver id amount change event)   
+#(define (make-psg-bracket-grob context engraver id amount change restate event)   
   (let 
     ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracket event))
      (column (ly:context-property context 'currentMusicalColumn)))
@@ -517,6 +520,7 @@ psg-define-copedent =
       (ly:spanner-set-bound! grob LEFT column)
       (ly:grob-set-property! grob 'psg-id id)
       (ly:grob-set-property! grob 'psg-amount amount)
+      (ly:grob-set-property! grob 'psg-restate restate)
       (ly:grob-set-property! grob 'text (make-psg-change-markup id amount change))
       grob)))
 
@@ -542,6 +546,7 @@ psg-define-copedent =
   (let
     ((copedent (ly:context-property context 'psg-copedent))
      (in-space (ly:context-property context 'psg-tab-in-space))
+     (restate-before-slow-change (ly:context-property context 'psg-restate-before-slow-change))
      (clef-style (if (equal? (ly:context-property context 'psg-clef-style) 'both) 0 (if (equal? (ly:context-property context 'psg-clef-style) 'numbers) 1 2)))
      (active '())
      (changes '())
@@ -584,7 +589,12 @@ psg-define-copedent =
           (if (not (find-psg-id active id))
             (begin ;pedal/lever on slow
               (set! active (add-psg-id active id 0))
-              (set! changes (add-psg-id changes id (list 1 0 event)))))
+              (set! changes (add-psg-id changes id (list 1 0 event))))
+            (if (and restate-before-slow-change (not (find-psg-id changes id)))
+              (let 
+                ((amount (find-psg-id active id)))
+                (set! active (add-psg-id (remove-psg-id active id) id amount))
+                (set! changes (add-psg-id changes id (list -2 amount event))))))
           (if (psg-valid-pedal-or-lever copedent id 1)
             (set! slow (add-psg-id slow id event)))))
       ;; ------- acknowledgers -------
@@ -607,13 +617,14 @@ psg-define-copedent =
         (set! changes (psg-loop-and-clear changes (lambda (id-grob)                             
           (let 
             ((id (car id-grob))
-             (type (caadr id-grob))
+             (type (abs (caadr id-grob)))
+             (restate (< (caadr id-grob) 0))
              (amount (cadadr id-grob))
              (event (car (cddadr id-grob))))
             (case type
               ((0) (set! grobs (end-psg-bracket-grob context grobs id #f amount)))
-              ((1) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #f event))))
-              ((2) (set! grobs (end-psg-bracket-grob context grobs id #t amount)) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #t event)))))))))
+              ((1) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #f restate event))))
+              ((2) (set! grobs (end-psg-bracket-grob context grobs id #t amount)) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #t restate event)))))))))
         (set! slow (psg-loop-and-clear slow (lambda (id-grob)                             
           (let 
             ((id (car id-grob))
@@ -793,6 +804,7 @@ psg-define-copedent =
       
     psg-tab-in-space = ##t
     psg-clef-style = #'both
+    psg-restate-before-slow-change = ##f
   }
     
   \inherit-acceptability PedalSteelTab TabStaff
