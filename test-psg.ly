@@ -57,7 +57,7 @@ myNotes = \transpose c c'
       psg-restate-before-slow-change = ##t		% can also use 'numbers or 'names
       
       \override PSGPedalOrLeverBracket.psg-represent-fraction= ##t	         % sets whether the depth of brackets is different for fractional pedals 
-       \override PSGPedalOrLeverBracket.psg-restate-when-broken=##t	% sets whether the pedal/lever indication is restated when the system is broken
+      \override PSGPedalOrLeverBracket.psg-restate-when-broken=##t		% sets whether the pedal/lever indication is restated when the system is broken
     }
   }
   

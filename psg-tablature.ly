@@ -456,7 +456,7 @@ psg-define-copedent =
   (define alterations (psg-alterations-for-id copedent id))
   (if alterations
     (if (and (> amount 1) (null? (cadr alterations)))
-      (begin 
+      (begin
         (ly:warning "Pedal or lever ~a does not have extension - ignoring!" id)
         #f)
       #t)
@@ -480,9 +480,9 @@ psg-define-copedent =
 #(define (psg-loop-and-clear record proc)
   (for-each proc record)
   (begin '()))
-        
+
 #(define (make-psg-change-markuplist id amount change)
-  (let 
+  (let
     ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id))))
      (empty change))
     (if (> amount 1)
@@ -491,7 +491,7 @@ psg-define-copedent =
         (set! amount (- amount 1))
         (set! empty #f)))
     (if (or empty (not (integer? amount)))
-      (cond 
+      (cond
         ((= amount 1) (append! markuplist (list (markup #:simple id))))
         ((= amount (/ 1 2)) (append! markuplist (list (markup #:simple "½"))))
         ((= amount (/ 1 3)) (append! markuplist (list (markup #:simple "⅓"))))
@@ -514,8 +514,8 @@ psg-define-copedent =
 #(define (make-psg-change-markup id amount change)
  (markup (#:fontsize -4 (#:sans (#:bold (make-concat-markup (make-psg-change-markuplist id amount change)))))))
 
-#(define (make-psg-bracket-grob context engraver id amount change restate event)   
-  (let 
+#(define (make-psg-bracket-grob context engraver id amount change restate event)
+  (let
     ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracket event))
      (column (ly:context-property context 'currentMusicalColumn)))
     (begin
@@ -527,19 +527,19 @@ psg-define-copedent =
       grob)))
 
 #(define (end-psg-bracket-grob context grobs id change amount)
-  (let* 
+  (let*
     ((grob (find-psg-id grobs id))
      (slow (ly:grob-property grob 'psg-slow #f)))
     (if change
-      (begin 
+      (begin
         (ly:spanner-set-bound! grob RIGHT (ly:context-property context 'currentMusicalColumn))
         (ly:grob-set-property! grob 'psg-continue #t)
         (if slow (ly:grob-set-property! grob 'psg-slow (list (car slow) amount (caddr slow)))))
       (ly:spanner-set-bound! grob RIGHT (ly:context-property context 'currentCommandColumn)))
     (remove-psg-id grobs id)))
 
-#(define (set-psg-bracket-slow context id grobs event)   
-  (let 
+#(define (set-psg-bracket-slow context id grobs event)
+  (let
     ((column (ly:context-property context 'currentMusicalColumn))
      (grob (find-psg-id grobs id)))
     (ly:grob-set-property! grob 'psg-slow (list column #f event))))
@@ -593,7 +593,7 @@ psg-define-copedent =
               (set! active (add-psg-id active id 0))
               (set! changes (add-psg-id changes id (list 1 0 event))))
             (if (and restate-before-slow-change (not (find-psg-id changes id)))
-              (let 
+              (let
                 ((amount (find-psg-id active id)))
                 (set! active (add-psg-id (remove-psg-id active id) id amount))
                 (set! changes (add-psg-id changes id (list -2 amount event))))))
@@ -617,7 +617,7 @@ psg-define-copedent =
       ;; ------- process music -------
       ((process-music engraver)
         (set! changes (psg-loop-and-clear changes (lambda (id-grob)                             
-          (let 
+          (let
             ((id (car id-grob))
              (type (abs (caadr id-grob)))
              (restate (< (caadr id-grob) 0))
@@ -628,28 +628,28 @@ psg-define-copedent =
               ((1) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #f restate event))))
               ((2) (set! grobs (end-psg-bracket-grob context grobs id #t amount)) (set! grobs (add-psg-id grobs id (make-psg-bracket-grob context engraver id amount #t restate event)))))))))
         (set! slow (psg-loop-and-clear slow (lambda (id-grob)                             
-          (let 
+          (let
             ((id (car id-grob))
              (event (cadr id-grob)))
             (set-psg-bracket-slow context id grobs event))))))
       ;; ------- finalize -------
       ((finalize engraver)
        (set! grobs (psg-loop-and-clear grobs (lambda (id-grob)                             
-          (let 
+          (let
             ((id (car id-grob)))
             (set! grobs (end-psg-bracket-grob context grobs id #f 0))))))))))
 
 #(define (make-psg-alignment-grob context engraver idx)   
-  (let 
+  (let
     ((grob (ly:engraver-make-grob engraver 'PSGPedalOrLeverBracketLineSpanner '()))
      (column (ly:context-property context 'currentCommandColumn)))
-    (begin 
+    (begin
       (ly:grob-set-property! grob 'outside-staff-priority (+ 250 (* 10 idx)))
       (ly:spanner-set-bound! grob LEFT column)
       grob)))
 
 #(define (end-psg-alignment-grob context grob)
-  (let 
+  (let
     ((column (ly:context-property context 'currentCommandColumn)))
     (ly:spanner-set-bound! grob RIGHT column)))
 
@@ -671,17 +671,17 @@ psg-define-copedent =
             (ly:grob-set-property! grob 'Y-offset -2)
             (ly:axis-group-interface::add-element (find-psg-id alignment-grobs id) grob))))))
       ;; ------- process-music -------
-      ((process-music engraver)   
+      ((process-music engraver)
        (when (and (null? alignment-grobs) (not (null? (psg-copedent-id-list copedent))))
-         (for-each (lambda (id idx) 
+         (for-each (lambda (id idx)
           (set! alignment-grobs (add-psg-id alignment-grobs id (make-psg-alignment-grob context engraver idx)))) (psg-copedent-id-list copedent) (iota (length (psg-copedent-id-list copedent))))))
       ;; ------- finalize -------
       ((finalize engraver)
-        (let 
+        (let
           ((column (ly:context-property context 'currentCommandColumn)))
-          (set! alignment-grobs (psg-loop-and-clear alignment-grobs (lambda (id-grob)                             
+          (set! alignment-grobs (psg-loop-and-clear alignment-grobs (lambda (id-grob)
             (end-psg-alignment-grob context (cadr id-grob))))))))))
-              
+
 %% Markup for copedents
 
 #(define (psg-markuplist-loop idx to proc)
@@ -690,7 +690,7 @@ psg-define-copedent =
     (append (list (proc idx)) (psg-markuplist-loop (+ idx 1) to proc))))
 
 #(define (psg-pitch-to-markup pitch whiteout)
-  (let 
+  (let
     ((alteration (ly:pitch-alteration pitch))
      (letter (string (integer->char (+ 65 (modulo (- (ly:pitch-notename pitch) 5) 7)))))
      (item (if whiteout #:whiteout #:simple)))
@@ -717,7 +717,7 @@ psg-define-copedent =
   (if (or (null? ext) (= basic (list-ref ext stringnum)))
      (if (= basic 0)
         (markup #:simple "")
-        (if names 
+        (if names
           (get-pitch 1)
           (markup #:simple (numtostring basic))))
      (if names 
@@ -728,9 +728,9 @@ psg-define-copedent =
 
 #(define-markup-command (psg-copedent-diagram-box layout props size text color)
   (number? markup? color?)
-  (let 
-    ((width size) 
-     (height (/ size 2.5)) 
+  (let
+    ((width size)
+     (height (/ size 2.5))
      (thickness (/ size 80)))
     (interpret-markup layout props
       #{
@@ -785,7 +785,7 @@ psg-define-copedent =
           \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95) #t)
         }
       #})))
-  
+
 %% Define the PedalSteelTab context
 
 \layout
@@ -803,14 +803,14 @@ psg-define-copedent =
     \alias TabStaff
     \consists #psg-tab-engraver
     \consists #psg-tab-alignment-engraver
-      
+    
     psg-tab-in-space = ##t
     psg-clef-style = #'both
     psg-restate-before-slow-change = ##f
   }
-    
+  
   \inherit-acceptability PedalSteelTab TabStaff
-    
+  
   \context
   {
     \Staff
@@ -820,7 +820,7 @@ psg-define-copedent =
 
     \omit StringNumber
   }
-    
+  
   \inherit-acceptability PedalSteelStaff Staff
   \inherit-acceptability Staff PedalSteelStaff
 }
