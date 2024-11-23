@@ -300,11 +300,16 @@ psg-define-copedent =
 %% Pedal / lever stencil
 
 #(define (make-psg-pedal-or-lever-text grob thickness in-parentheses)
+  (define (width stencil) 
+    (let 
+      ((extent (ly:stencil-extent stencil X)))
+      (- (cdr extent) (car extent))))
   (let* 
     ((amount (ly:grob-property grob 'psg-amount))
      (stencil (grob-interpret-markup grob (markup (ly:grob-property grob 'text))))
      (common (ly:grob-common-refpoint (ly:spanner-bound grob LEFT) (ly:spanner-bound grob RIGHT) X))
-     (offsetX (if (not (unbroken-or-first-broken-spanner? grob)) (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)) 0)))
+     (do-offset (not (unbroken-or-first-broken-spanner? grob)))
+     (offsetX (if do-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)) 0)))
     ; do parentheses if needed
     (if (or (= amount 0) in-parentheses) 
       (begin 
@@ -312,7 +317,7 @@ psg-define-copedent =
         (set! stencil (ly:stencil-translate stencil (cons (- 0 (car (ly:stencil-extent stencil X))) 0)))
       ))
     ; translate and return
-    (ly:stencil-translate stencil (cons offsetX (- 0 (/ thickness 2))))))
+    (ly:stencil-translate stencil (cons (if do-offset (- offsetX (width stencil)) 0) (- 0 (/ thickness 2))))))
 
 #(define (make-psg-pedal-lever-line start-x start-y end-x end-y thickness arrow)
   (let 
@@ -371,7 +376,7 @@ psg-define-copedent =
             (set! arrow #t))))
       ; find the left edge of the bracket
       (if (not (unbroken-or-first-broken-spanner? grob)) 
-        (set! bracket-offset (+ text-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))))
+        (set! bracket-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common))))
       ; find the right edge of the bracket
       (if (not-last-broken-spanner? grob)
         (set! relativeR (- (cdr (ly:generic-bound-extent (ly:spanner-bound grob RIGHT) common)) absoluteL))
