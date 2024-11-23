@@ -128,7 +128,6 @@ psgSlow =
 #(set-object-property! 'psg-copedent 'translation-type? psg-copedent?)
 #(set-object-property! 'psg-tab-in-space 'translation-type? boolean?)
 #(set-object-property! 'psg-clef-style 'translation-type? symbol?)
-#(set-object-property! 'psg-restate-before-slow-change 'translation-type? boolean?)
 
 #(set-object-property! 'psg-id 'backend-type? string?)
 #(set-object-property! 'psg-amount 'backend-type? number?)
@@ -136,7 +135,7 @@ psgSlow =
 #(set-object-property! 'psg-slow 'backend-type? list?)
 #(set-object-property! 'psg-restate 'backend-type? boolean?)
 
-#(set-object-property! 'psg-represent-fraction 'backend-type? boolean?)
+#(set-object-property! 'psg-display-style 'backend-type? symbol?)
 #(set-object-property! 'psg-restate-when-broken 'backend-type? boolean?)
 
 %% Copedent definition functions
@@ -346,8 +345,9 @@ psg-define-copedent =
        (amount (ly:grob-property grob 'psg-amount))
        (target-amount (if (and slow-rank (not slow-after)) (cadr slow) amount))
        (edge-height (cdr (ly:grob-property grob 'edge-height)))
-       (start-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* amount edge-height)) 0))
-       (end-height (if (ly:grob-property grob 'psg-represent-fraction) (- edge-height (* target-amount edge-height)) 0))
+       (display-with-height (not (eq? (ly:grob-property grob 'psg-display-style) 'flat)))
+       (start-height (if display-with-height (- edge-height (* amount edge-height)) 0))
+       (end-height (if display-with-height (- edge-height (* target-amount edge-height)) 0))
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
        (relativeM (if split-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) #f))
@@ -355,7 +355,7 @@ psg-define-copedent =
        (arrow #f))
       ; calculate the height of the brackets for broken slow changes
       (if slow-column 
-        (if (ly:grob-property grob 'psg-represent-fraction)
+        (if display-with-height
           (begin 
             (if (ly:moment<? slow-start this-start) 
               (let 
@@ -411,7 +411,7 @@ psg-define-copedent =
      (minimum-length . 0.3)
      (outside-staff-priority . 400)
      (padding . 0.5)
-     (psg-represent-fraction . #t)
+     (psg-display-style . height)
      (shorten-pair . (0 . 0))
      (staff-padding . 2.0)
      (stencil . ,(psg-pedal-or-lever-bracket-stencil))
@@ -564,7 +564,7 @@ psg-define-copedent =
   (let
     ((copedent (ly:context-property context 'psg-copedent))
      (in-space (ly:context-property context 'psg-tab-in-space))
-     (restate-before-slow-change (ly:context-property context 'psg-restate-before-slow-change))
+     (display-style (ly:assoc-get 'psg-display-style (ly:context-grob-definition context 'PSGPedalOrLeverBracket) #t #f))
      (clef-style (if (equal? (ly:context-property context 'psg-clef-style) 'both) 0 (if (equal? (ly:context-property context 'psg-clef-style) 'numbers) 1 2)))
      (active '())
      (changes '())
@@ -608,7 +608,7 @@ psg-define-copedent =
             (begin ;pedal/lever on slow
               (set! active (add-psg-id active id 0))
               (set! changes (add-psg-id changes id (list 1 0 event))))
-            (if (and restate-before-slow-change (not (find-psg-id changes id)))
+            (if (and (not (eq? display-style 'height)) (not (find-psg-id changes id)))
               (let
                 ((amount (find-psg-id active id)))
                 (set! active (add-psg-id (remove-psg-id active id) id amount))
@@ -822,7 +822,6 @@ psg-define-copedent =
     
     psg-tab-in-space = ##t
     psg-clef-style = #'both
-    psg-restate-before-slow-change = ##f
   }
   
   \inherit-acceptability PedalSteelTab TabStaff
