@@ -315,6 +315,16 @@ psg-define-copedent =
     ; translate and return
     (ly:stencil-translate stencil (cons offsetX (- 0 (/ thickness 2))))))
 
+#(define (make-psg-pedal-lever-line start-x start-y end-x end-y thickness arrow)
+  (let 
+    ((arrow-length 1)
+     (arrow-width 0.6))
+    (if arrow
+      (ly:stencil-add
+        (make-path-stencil (list 'moveto start-x start-y 'lineto (- end-x (/ arrow-length 2)) end-y) thickness 1 1 #f)
+        (make-path-stencil (list 'moveto end-x end-y 'rlineto (- 0 arrow-length) (/ arrow-width 2) 'rlineto 0 (- 0 arrow-width)'closepath) thickness 1 1 #t))
+      (make-path-stencil (list 'moveto start-x start-y 'lineto end-x end-y) thickness 1 1 #f))))
+        
 #(define (make-psg-pedal-or-lever-bracket grob text-padding text-offset thickness)
     (define (time-calculate a b c)
       (ly:moment-main (ly:moment-div (ly:moment-sub a b) (ly:moment-sub c b))))
@@ -341,18 +351,24 @@ psg-define-copedent =
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
        (relativeM (if split-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) #f))
-       (relativeR (- (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X) absoluteL)))
+       (relativeR (- (ly:grob-relative-coordinate (ly:spanner-bound grob RIGHT) common X) absoluteL))
+       (arrow #f))
       ; calculate the height of the brackets for broken slow changes
-      (if (and slow-column (ly:grob-property grob 'psg-represent-fraction)) 
-        (begin 
-          (if (ly:moment<? slow-start this-start) 
-            (let 
-              ((start-amount (interpolate amount target-amount (time-calculate this-start slow-start slow-end))))
-              (set! start-height (- edge-height (* start-amount edge-height)))))
-          (if (ly:moment<? this-end slow-end) 
-            (let 
-              ((end-amount (interpolate amount target-amount (time-calculate this-end slow-start slow-end))))
-              (set! end-height (- edge-height (* end-amount edge-height)))))))
+      (if slow-column 
+        (if (ly:grob-property grob 'psg-represent-fraction)
+          (begin 
+            (if (ly:moment<? slow-start this-start) 
+              (let 
+                ((start-amount (interpolate amount target-amount (time-calculate this-start slow-start slow-end))))
+                (set! start-height (- edge-height (* start-amount edge-height)))))
+            (if (ly:moment<? this-end slow-end) 
+              (let 
+                ((end-amount (interpolate amount target-amount (time-calculate this-end slow-start slow-end))))
+                (set! end-height (- edge-height (* end-amount edge-height))))))
+         (begin 
+            (set! start-height (/ edge-height 2))
+            (set! end-height (/ edge-height 2))
+            (set! arrow #t))))
       ; find the left edge of the bracket
       (if (not (unbroken-or-first-broken-spanner? grob)) 
         (set! bracket-offset (+ text-offset (cdr (ly:generic-bound-extent (ly:spanner-bound grob LEFT) common)))))
@@ -364,7 +380,7 @@ psg-define-copedent =
       (if split-render
        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeM start-height 'lineto relativeR end-height) thickness 1 1 #f)
        (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
-        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR end-height) thickness 1 1 #f)
+        (make-psg-pedal-lever-line bracket-offset start-height relativeR end-height thickness arrow)
         (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR start-height 'lineto relativeR edge-height) thickness 1 1 #f)))))
 
 #(define (psg-pedal-or-lever-bracket-stencil)
