@@ -129,14 +129,19 @@ psgSlow =
 #(set-object-property! 'psg-tab-in-space 'translation-type? boolean?)
 #(set-object-property! 'psg-clef-style 'translation-type? symbol?)
 
+%% User grob properties
+
+#(set-object-property! 'bracket-height 'backend-type? number?)
+#(set-object-property! 'psg-display-style 'backend-type? symbol?)
+#(set-object-property! 'psg-restate-when-broken 'backend-type? boolean?)
+
+%% internals
+
 #(set-object-property! 'psg-id 'backend-type? string?)
 #(set-object-property! 'psg-amount 'backend-type? number?)
 #(set-object-property! 'psg-continue 'backend-type? boolean?)
 #(set-object-property! 'psg-slow 'backend-type? list?)
 #(set-object-property! 'psg-restate 'backend-type? boolean?)
-
-#(set-object-property! 'psg-display-style 'backend-type? symbol?)
-#(set-object-property! 'psg-restate-when-broken 'backend-type? boolean?)
 
 %% Copedent definition functions
 
@@ -349,10 +354,10 @@ psg-define-copedent =
        (this-end (if slow-column (grob::when  (ly:spanner-bound grob RIGHT)) #f))
        (amount (ly:grob-property grob 'psg-amount))
        (target-amount (if (and slow-rank (not slow-after)) (cadr slow) amount))
-       (edge-height (cdr (ly:grob-property grob 'edge-height)))
+       (bracket-height (ly:grob-property grob 'bracket-height))
        (display-with-height (not (eq? (ly:grob-property grob 'psg-display-style) 'flat)))
-       (start-height (if display-with-height (- edge-height (* amount edge-height)) 0))
-       (end-height (if display-with-height (- edge-height (* target-amount edge-height)) 0))
+       (start-height (if display-with-height (- bracket-height (* amount bracket-height)) 0))
+       (end-height (if display-with-height (- bracket-height (* target-amount bracket-height)) 0))
        (bracket-offset text-offset)
        (absoluteL (ly:grob-relative-coordinate (ly:spanner-bound grob LEFT) common X))
        (relativeM (if split-render (- (ly:grob-relative-coordinate slow-column common X) absoluteL) #f))
@@ -365,14 +370,14 @@ psg-define-copedent =
             (if (ly:moment<? slow-start this-start) 
               (let 
                 ((start-amount (interpolate amount target-amount (time-calculate this-start slow-start slow-end))))
-                (set! start-height (- edge-height (* start-amount edge-height)))))
+                (set! start-height (- bracket-height (* start-amount bracket-height)))))
             (if (ly:moment<? this-end slow-end) 
               (let 
                 ((end-amount (interpolate amount target-amount (time-calculate this-end slow-start slow-end))))
-                (set! end-height (- edge-height (* end-amount edge-height))))))
+                (set! end-height (- bracket-height (* end-amount bracket-height))))))
          (begin 
-            (set! start-height (/ edge-height 2))
-            (set! end-height (/ edge-height 2))
+            (set! start-height (/ bracket-height 2))
+            (set! end-height (/ bracket-height 2))
             (set! arrow #t))))
       ; find the left edge of the bracket
       (if (not (unbroken-or-first-broken-spanner? grob)) 
@@ -386,7 +391,7 @@ psg-define-copedent =
        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeM start-height 'lineto relativeR end-height) thickness 1 1 #f)
        (if (or (not-last-broken-spanner? grob) (ly:grob-property grob 'psg-continue #f))
         (make-psg-pedal-lever-line bracket-offset start-height relativeR end-height thickness arrow)
-        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR start-height 'lineto relativeR edge-height) thickness 1 1 #f)))))
+        (make-path-stencil (list 'moveto bracket-offset start-height 'lineto relativeR start-height 'lineto relativeR bracket-height) thickness 1 1 #f)))))
 
 #(define (psg-pedal-or-lever-bracket-stencil)
   (lambda (grob)
@@ -409,8 +414,8 @@ psg-define-copedent =
          (cons ((@@ (lily) completize-grob-entry) grob-entry) all-grob-descriptions)))
 
 #(add-grob-definition `(PSGPedalOrLeverBracket
-  . ((direction . ,DOWN)
-     (edge-height . (0 . 0.9))
+  . ((bracket-height . 0.9)
+     (direction . ,DOWN)
      (font-series . bold)
      (font-shape . upright)
      (minimum-length . 0.3)
