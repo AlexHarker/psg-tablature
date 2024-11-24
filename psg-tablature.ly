@@ -566,10 +566,10 @@ psg-define-copedent =
     (ly:grob-set-property! grob 'psg-slow (list column #f event))))
 
 #(define (psg-tab-engraver context)
+  (define (display-style) (ly:assoc-get 'psg-display-style (ly:context-grob-definition context 'PSGPedalOrLeverBracket) #t #f))
   (let
     ((copedent (ly:context-property context 'psg-copedent))
      (in-space (ly:context-property context 'psg-tab-in-space))
-     (display-style (ly:assoc-get 'psg-display-style (ly:context-grob-definition context 'PSGPedalOrLeverBracket) #t #f))
      (clef-style (if (equal? (ly:context-property context 'psg-clef-style) 'both) 0 (if (equal? (ly:context-property context 'psg-clef-style) 'numbers) 1 2)))
      (active '())
      (changes '())
@@ -613,7 +613,7 @@ psg-define-copedent =
             (begin ;pedal/lever on slow
               (set! active (add-psg-id active id 0))
               (set! changes (add-psg-id changes id (list 1 0 event))))
-            (if (and (not (eq? display-style 'height)) (not (find-psg-id changes id)))
+            (if (and (not (eq? (display-style) 'height)) (not (find-psg-id changes id)))
               (let
                 ((amount (find-psg-id active id)))
                 (set! active (add-psg-id (remove-psg-id active id) id amount))
