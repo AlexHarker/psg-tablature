@@ -65,12 +65,6 @@ psgFractional =
   (psg-id-type? integer? integer?)
   (make-psg-pedal-or-lever-event id START (/ num denom)))
 
-psgExt =
-#(define-music-function
-  (id)
-  (psg-id-type?)
-  (make-psg-pedal-or-lever-event id START 2))
-
 psgOn =
 #(define-music-function
   (id)
@@ -145,7 +139,7 @@ psgSlow =
 
 %% Copedent definition functions
 
-psg-define-pedal-or-lever-ext =
+psg-define-pedal-or-lever-stopped =
 #(define-scheme-function
   (id alterations extended-alterations)
   (psg-id-type? list? list?)
@@ -155,7 +149,7 @@ psg-define-pedal-or-lever =
 #(define-scheme-function
   (id alterations)
   (psg-id-type? list?)
-  (psg-define-pedal-or-lever-ext id alterations '()))
+  (psg-define-pedal-or-lever-stopped id alterations '()))
 
 psg-define-copedent =
 #(define-scheme-function

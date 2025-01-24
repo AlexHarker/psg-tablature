@@ -11,7 +11,7 @@
 myNotes = \transpose c c'
 {
   \set TabStaff.restrainOpenStrings = ##t
-  <e\6 a\5 cis'\4>4 \psgOn A \psgOn LKL <e\6 a\5 cis'\4>4 \psgOff LKL \psgOn LKV  <e\6 a\5 cis'\4>4  \psgOff A <e\6 a\5 cis'\4>2 \psgExt LKV   e'4\4 \psgOff LKV
+  <e\6 a\5 cis'\4>4 \psgOn A \psgOn LKL <e\6 a\5 cis'\4>4 \psgOff LKL \psgFractional LKV 1 2 <e\6 a\5 cis'\4>4  \psgOff A <e\6 a\5 cis'\4>2 \psgOn LKV   e'4\4 \psgOff LKV
   <e\6 a\5 cis'\4>4 \psgOn A \psgOn LKL <e\6 a\5 c'\4>4 \psgOff LKL <e\6 g\5 cis'\4>4 \psgOff A \psgOn LKL \psgSlow B <e\6 g\5 c'\4>2 \psgOff LKL e'4\4
   d,\10 \psgOn A d,\10 \psgOff A d,\10 \psgOn B  \psgFractional A 1 2 c, c, %{ %} cis,  \break  cis, cis, \psgSlow B  cis,  cis, cis, cis,  cis, cis, \psgOff A cis, \psgFractional B 1 2 cis,  \psgOn A  cis, cis, cis,  cis, cis, cis,  cis, cis, cis, cis, \psgOff B cis, cis, cis, cis, cis,  cis, cis, \psgOff A  cis,  cis, cis, cis,  cis, cis, cis, cis, cis, cis, cis, cis, cis, c, 
   \psgFractional A 1 2 d, d, \psgOn A dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis, dis,
