@@ -49,9 +49,9 @@ make-psg-pedal-or-lever-event =
 #(define-music-function
   (id span-dir amount)
   (psg-id-type? number? rational?)
-  (if (> amount 2)
+  (if (> amount 1)
     (begin
-      (ly:warning "Pedal or lever event with amount greater than extended (2) - processing as extended")
+      (ly:warning "Pedal or lever event with amount greater than 1 - setting to 1")
       (set! amount 2)))
   (if (<= amount 0)
     (begin
@@ -741,7 +741,7 @@ psg-define-copedent =
           (get-pitch 1)
           (markup #:simple (numtostring basic))))
      (if names 
-        (make-concat-markup (list (get-pitch 1) (markup #:simple "/") (get-pitch 2)))
+        (make-concat-markup (list (get-pitch (/ 1 2)) (markup #:simple "/") (get-pitch 1)))
         (make-concat-markup (list (markup #:simple (numtostring basic)) (markup #:simple "/") (markup #:simple (numtostring (list-ref ext stringnum))))))))
 
 %% Copedent diagram markup
