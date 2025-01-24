@@ -65,6 +65,12 @@ psgFractional =
   (psg-id-type? integer? integer?)
   (make-psg-pedal-or-lever-event id START (/ num denom)))
 
+psgHalf =
+#(define-music-function
+  (id)
+  (psg-id-type?)
+  (make-psg-pedal-or-lever-event id START (/ 1 2)))
+
 psgOn =
 #(define-music-function
   (id)
