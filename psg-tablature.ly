@@ -501,11 +501,6 @@ psg-define-copedent =
   (let
     ((markuplist (if change (list (markup #:simple "")) (list (markup #:simple id))))
      (empty change))
-    (if (> amount 1)
-      (begin
-        (append! markuplist (list (markup #:simple "+")))
-        (set! amount (- amount 1))
-        (set! empty #f)))
     (if (or empty (not (integer? amount)))
       (cond
         ((= amount 1) (append! markuplist (list (markup #:simple id))))
