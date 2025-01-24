@@ -476,15 +476,9 @@ psg-define-copedent =
 
 #(define (psg-valid-pedal-or-lever copedent id amount)
   (define alterations (psg-alterations-for-id copedent id))
-  (if alterations
-    (if (and (> amount 1) (null? (cadr alterations)))
-      (begin
-        (ly:warning "Pedal or lever ~a does not have extension - ignoring!" id)
-        #f)
-      #t)
-    (begin
-      (ly:warning "No pedal or lever with id ~a in copedent - ignoring!" id)
-      #f)))
+  (if alterations #t
+    (begin (ly:warning "No pedal or lever with id ~a in copedent - ignoring!" id)
+    #f)))
 
 #(define (find-psg-id record id)
   (if (null? record)
