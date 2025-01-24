@@ -225,9 +225,11 @@ psg-define-copedent =
   (+ prev add))
 
 #(define (calculate-alterations normal extended amount)
-  (if (<= amount 1)
-      (map (lambda (a) (* a amount)) normal)
-      (map (lambda (a b) (+ (* (- amount 1) b) (* (- 2 amount) a))) normal extended)))
+  (if (null? extended)
+    (begin (map (lambda (a) (* a amount)) normal))
+    (if (<= amount (/ 1 2))
+      (map (lambda (a) (* a (* amount 2))) normal)
+      (map (lambda (a b) (+ (* (- (* amount 2) 1) b) (* (- 2 (* amount 2)) a))) normal extended))))
 
 #(define (psg-evaluation-loop adjust copedent active)
   (if (null? active)
