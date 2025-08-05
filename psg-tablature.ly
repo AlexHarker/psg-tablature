@@ -743,12 +743,10 @@ psg-define-copedent =
 
 %% Copedent diagram markup
 
-#(define-markup-command (psg-copedent-diagram-box layout props size text color)
-  (number? markup? color?)
+#(define-markup-command (psg-copedent-diagram-box layout props width height text color)
+  (number? number? markup? color?)
   (let
-    ((width size)
-     (height (/ size 2.5))
-     (thickness (/ size 80)))
+    ((thickness (/ width 80)))
     (interpret-markup layout props
       #{
         \markup
@@ -769,16 +767,16 @@ psg-define-copedent =
         }
       #})))
 
-#(define (psg-string-loop copedent size id labelproc colorproc)
-  (markup (#:override `(baseline-skip . ,(/ size 2.2)) (make-column-markup
+#(define (psg-string-loop copedent width height id labelproc colorproc)
+  (markup (#:override `(baseline-skip . ,(/ width 2.2)) (make-column-markup
     (psg-markuplist-loop 0 (psg-copedent-num-strings copedent)
       (lambda (x)
         (begin
           #{
-            \markup \psg-copedent-diagram-box #size #(if (> x 0) (labelproc (- x 1)) (markup #:bold id)) #(colorproc x)
+            \markup \psg-copedent-diagram-box #width #height #(if (> x 0) (labelproc (- x 1)) (markup #:bold id)) #(colorproc x)
           #})))))))
 
-#(define (psg-pedal-lever-loop copedent size headingcolor color1 color2 names)
+#(define (psg-pedal-lever-loop copedent width height headingcolor color1 color2 names)
   (define id-list (psg-copedent-id-list copedent))
   (define strings (psg-copedent-strings copedent))
   (psg-markuplist-loop 0 (psg-copedent-num-pedals-and-levers copedent)
@@ -787,19 +785,19 @@ psg-define-copedent =
       (let
         ((listproc (if (> x 0) (lambda (y) (psg-alteration-markup copedent id y names)) (lambda (y) (markup #:bold (psg-pitch-to-markup (list-ref strings y) #f)))))
          (colorproc (if (> x 0) (lambda (y) (if (> y 0) (if (= (modulo y 2) 1) color2 color1) headingcolor)) (lambda (y) (begin headingcolor)))))
-        (psg-string-loop copedent size id listproc colorproc)))))
+        (psg-string-loop copedent width height id listproc colorproc)))))
 
-#(define-markup-command (psg-copedent-diagram layout props copedent size)
-  (psg-copedent? number?)
+#(define-markup-command (psg-copedent-diagram layout props copedent size height-ratio)
+  (psg-copedent? number? number?) 
   (let
     ((width size)
-     (height (/ size 2))
+     (height (/ size height-ratio))
      (textsize (- size 3)))
     (interpret-markup layout props
       #{
         \markup
         {
-          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent size  (rgb-color 0.7 0.7 0.7)  (rgb-color 0.88 0.88 0.88)  (rgb-color 0.95 0.95 0.95) #t)
+          \fontsize #textsize \override #`(word-space . ,(/ size 22)) \line #(psg-pedal-lever-loop copedent width height (rgb-color 0.7 0.7 0.7) (rgb-color 0.88 0.88 0.88) (rgb-color 0.95 0.95 0.95) #t)
         }
       #})))
 
