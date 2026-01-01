@@ -192,7 +192,7 @@ psg-define-copedent =
        (cdr (list-ref pedals-and-levers (- (length pedals-and-levers) (length id-sublist)))))
     (begin #f)))
 
-%% Evaluation of copedents - here we define functions for deftermining the active tuning given a copedent and set of active pedals or levers
+%% Evaluation of copedents - here we define functions for determining the active tuning given a copedent and set of active pedals or levers
 
 #(define (naturalize-pitch p)
    (let 
