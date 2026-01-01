@@ -164,7 +164,7 @@ psg-define-copedent =
   (define copedent (append (list strings) pedal-and-levers))
   (if (psg-copedent? copedent)
     (begin copedent)
-    (begin (ly:error ("Copedent is not correctly defined!")'(())))))
+    (begin (ly:error ("Copedent is not correctly defined!")))))
     
 %% Utilities for accessing parts of a copedent
 
