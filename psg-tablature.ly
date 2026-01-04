@@ -232,9 +232,9 @@ psg-define-copedent =
       (+ (ly:pitch-alteration pitch) (/ alter 2))))))
 
 #(define (contains list x)
-	(cond [(null? list) #f]
-		[(equal? (car list) x) #t]
-		[else (contains (cdr list) x)]))
+	(cond ((null? list) #f)
+		((equal? (car list) x) #t)
+		(else (contains (cdr list) x))))
 
 #(define (gather-alterations prev add)
     (cons add prev))
