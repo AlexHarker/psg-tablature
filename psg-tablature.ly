@@ -110,7 +110,10 @@ psgSlow =
     (begin #t)
     (let 
       ((current-alterations (cadar pedal-and-levers))
-       (extended-alterations (caddar pedal-and-levers)))
+       (extended-alterations (caddar pedal-and-levers))
+       (group (car (cdddar pedal-and-levers))))
+      (if (not (or (null? group) (or (psg-id-type? group))))
+          (ly:error "Incorrect group for pedal or lever"))
       (if (and (= (length current-alterations) (length strings)) (or (null? extended-alterations)(= (length extended-alterations) (length strings))))
         (and (psg-check-alterations current-alterations) (psg-check-alterations extended-alterations) (psg-check-pedals-and-levers strings (cdr pedal-and-levers)))
         (ly:error ("Number of string alterations in pedal or lever doesn't match the number of strings!"))))))
@@ -145,17 +148,20 @@ psgSlow =
 
 %% Copedent definition functions
 
+#(define psg-default-group "DEFAULT")
+
 psg-define-pedal-or-lever-stopped =
 #(define-scheme-function
-  (id alterations extended-alterations)
-  (psg-id-type? list? list?)
-  (list (psg-id-to-string id) (reverse alterations) (reverse extended-alterations)))
+  (id group alterations extended-alterations)
+  (psg-id-type? (psg-id-type? psg-default-group) list? list?)
+  (if (string? group) (if (equal? group psg-default-group) (set! group '())))
+  (list (psg-id-to-string id) (reverse alterations) (reverse extended-alterations) group))
 
 psg-define-pedal-or-lever =
 #(define-scheme-function
-  (id alterations)
-  (psg-id-type? list?)
-  (psg-define-pedal-or-lever-stopped id alterations '()))
+  (id group alterations)
+  (psg-id-type? (psg-id-type? psg-default-group) list?)
+  (psg-define-pedal-or-lever-stopped id group alterations '()))
 
 psg-define-copedent =
 #(define-scheme-function
@@ -183,7 +189,7 @@ psg-define-copedent =
 #(define (psg-copedent-id-list copedent)
   (map car (psg-copedent-pedals-and-levers copedent)))
 
-#(define (psg-alterations-for-id copedent id)
+#(define (psg-alterations-and-group-for-id copedent id)
   (define id-list (psg-copedent-id-list copedent))
   (define id-sublist (member id id-list))
   (if id-sublist
@@ -225,10 +231,24 @@ psg-define-copedent =
       (ly:pitch-notename pitch)
       (+ (ly:pitch-alteration pitch) (/ alter 2))))))
 
-#(define (sum-alterations prev add)
-  (if (and (not (= add 0)) (not (= prev 0)))
-    (ly:error "Impossible pedal/lever combination"))
-  (+ prev add))
+#(define (contains list x)
+	(cond [(null? list) #f]
+		[(equal? (car list) x) #t]
+		[else (contains (cdr list) x)]))
+
+#(define (gather-alterations prev add)
+    (cons add prev))
+
+#(define (calculate-final-alteration alterations)
+  (define positive (apply max (cons 0 alterations)))
+  (define negative (apply min (cons 0 alterations)))
+  (if (and (> positive 0) (< negative 0))
+    (ly:warning "Conflicting pedal/lever alterations on the same string! Tuning is approximate."))
+  (+ positive negative))
+
+#(define (combine-alterations alterations strings)
+  (define result (map (lambda (x) 0) strings))
+    (map (lambda (a b) (+ a (calculate-final-alteration b))) result alterations))
 
 #(define (calculate-alterations normal extended amount)
   (if (null? extended)
@@ -240,23 +260,30 @@ psg-define-copedent =
 #(define (psg-evaluation-loop adjust copedent active)
   (if (null? active)
     (begin adjust)
-    (let 
-      ((alterations (psg-alterations-for-id copedent (caar active)))
-       (amount (cadar active)))
+    (let*
+      ((alterations (psg-alterations-and-group-for-id copedent (caar active)))
+       (amount (cadar active))
+       (group (caddr alterations))
+       (groups '()))
       (if alterations
         (begin
           (set! adjust (psg-evaluation-loop adjust copedent (cdr active)))
-          (map sum-alterations adjust (calculate-alterations (car alterations) (cadr alterations) amount)))
+          (set! groups (if (null? group) (car adjust) (cons group (car adjust))))
+          (if (and (not (null? group)) (contains (car adjust) group))
+            (ly:error "Impossible pedal/lever combination"))
+          (list groups (map gather-alterations (cadr adjust) (calculate-alterations (car alterations) (cadr alterations) amount))))
         (begin adjust)))))
 
 #(define (psg-evaluate-copedent copedent active offset)
   (define strings (psg-copedent-strings copedent))
-  (define adjust (map (lambda (x) (begin 0)) strings))
+  (define adjust (list '() (map (lambda (x) (begin '())) strings)))
+  (define alter (map (lambda (x) (begin 0)) strings))
   
   (if (not (null? (psg-copedent-pedals-and-levers copedent)))
     (begin
       (set! adjust (psg-evaluation-loop adjust copedent active))
-      (set! strings (map transpose-string strings adjust))))
+      (set! alter (combine-alterations (cadr adjust) strings))
+      (set! strings (map transpose-string strings alter))))
   
   ; check whether to add an additional string for display style
   
@@ -481,7 +508,7 @@ psg-define-copedent =
 %% Engraver
 
 #(define (psg-valid-pedal-or-lever copedent id amount)
-  (define alterations (psg-alterations-for-id copedent id))
+  (define alterations (psg-alterations-and-group-for-id copedent id))
   (if alterations #t
     (begin (ly:warning "No pedal or lever with id ~a in copedent - ignoring!" id)
     #f)))
@@ -725,7 +752,7 @@ psg-define-copedent =
 #(define (psg-alteration-markup copedent id stringnum names)
   (define (get-pitch amount)
     (psg-pitch-to-markup (list-ref (psg-evaluate-copedent copedent (list (list id amount)) #f) stringnum) #f))
-  (define alterations (psg-alterations-for-id copedent id))
+  (define alterations (psg-alterations-and-group-for-id copedent id))
   (define alt (car alterations))
   (define ext (cadr alterations))
   (define basic (list-ref alt stringnum))
