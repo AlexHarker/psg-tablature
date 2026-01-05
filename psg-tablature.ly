@@ -239,16 +239,23 @@ psg-define-copedent =
 #(define (gather-alterations prev add)
     (cons add prev))
 
-#(define (calculate-final-alteration alterations)
+#(define (list-rev-indices lst)
+  (define (rev-count count)
+    (if (> count 1)
+	    (cons count (rev-count (- count 1)))
+	    (list 1)))
+  (rev-count (length lst)))
+
+#(define (calculate-final-alteration alterations string-num)
   (define positive (apply max (cons 0 alterations)))
   (define negative (apply min (cons 0 alterations)))
   (if (and (> positive 0) (< negative 0))
-    (ly:warning "Conflicting pedal/lever alterations on the same string! Tuning is approximate."))
+    (ly:warning "Conflicting pedal/lever alterations on string ~a. Tuning is approximate." string-num))
   (+ positive negative))
 
 #(define (combine-alterations alterations strings)
   (define result (map (lambda (x) 0) strings))
-    (map (lambda (a b) (+ a (calculate-final-alteration b))) result alterations))
+    (map (lambda (a b c) (+ a (calculate-final-alteration b c))) result alterations (list-rev-indices strings)))
 
 #(define (calculate-alterations normal extended amount)
   (if (null? extended)
